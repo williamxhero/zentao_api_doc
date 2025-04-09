@@ -69,11 +69,11 @@ def parse_markdown_file(filepath):
                 param_desc = param.get('描述', '')
 
                 # 确定参数位置
-                param_in = 'query'
-                if method.lower() in ['post', 'put', 'patch'] and param_name.lower() != 'token':
-                    param_in = 'body'  # 将在后续处理中移至requestBody
-                elif param_name.lower() == 'token':
-                    param_in = 'header'
+                # 默认情况下，请求头中的参数都视为header参数
+                param_in = 'header'
+
+                # 确定参数位置
+                # 默认全部请求头字段都作为header参数
 
                 # 确定参数类型和格式
                 schema = determine_schema_type(param_type, param_desc)
@@ -90,26 +90,24 @@ def parse_markdown_file(filepath):
     # 解析响应参数表格，构建响应模型
     response_schema = parse_response_schema(content)
 
-    # 构建请求体模型（针对POST/PUT/PATCH方法）
+    # 不再构建请求体模型，所有请求头字段都作为header参数
     request_body = None
-    if method.lower() in ['post', 'put', 'patch']:
-        request_body = build_request_body(content)
 
-    # 响应示例
-    resp_example_match = re.search(r'####\s*响应示例\s*\n```json\n([\s\S]+?)\n```', content)
-    example_json = None
-    if resp_example_match:
-        example_text = resp_example_match.group(1).strip()
-        # 尝试修复不完整的JSON
-        if not example_text.startswith('{') and not example_text.startswith('['):
-            example_text = '{' + example_text
-        if not example_text.endswith('}') and not example_text.endswith(']'):
-            example_text = example_text + '}'
-        try:
-            example_json = json.loads(example_text)
-        except json.JSONDecodeError:
-            logger.warning(f"无法解析响应示例JSON: {filepath}")
-            example_json = example_text
+    # # 响应示例（已忽略）
+    # resp_example_match = re.search(r'####\s*响应示例\s*\n```json\n([\s\S]+?)\n```', content)
+    # example_json = None
+    # if resp_example_match:
+    #     example_text = resp_example_match.group(1).strip()
+    #     # 尝试修复不完整的JSON
+    #     if not example_text.startswith('{') and not example_text.startswith('['):
+    #         example_text = '{' + example_text
+    #     if not example_text.endswith('}') and not example_text.endswith(']'):
+    #         example_text = example_text + '}'
+    #     try:
+    #         example_json = json.loads(example_text)
+    #     except json.JSONDecodeError:
+    #         logger.warning(f"无法解析响应示例JSON: {filepath}")
+    #         example_json = example_text
 
     # 构建响应对象
     responses = {
@@ -153,9 +151,20 @@ def parse_markdown_file(filepath):
         }
     }
 
-    # 添加示例（如果有）
-    if example_json:
-        responses['200']['content']['application/json']['example'] = example_json
+    # # 添加示例（如果有）
+    # if example_json:
+    #     responses['200']['content']['application/json']['example'] = example_json
+
+    # 如果没有Token参数，自动添加一个Token header参数
+    has_token = any(p.get('name', '').lower() == 'token' and p.get('in') == 'header' for p in req_params)
+    if not has_token:
+        req_params.append({
+            'name': 'Token',
+            'in': 'header',
+            'required': False,
+            'description': '认证Token',
+            'schema': {'type': 'string'}
+        })
 
     return {
         'path': path,
@@ -333,67 +342,6 @@ def parse_response_schema(content):
     return root_schema
 
 
-def build_request_body(content):
-    """
-    构建请求体模型（针对POST/PUT/PATCH方法）
-    """
-    req_table_match = re.search(r'####\s*请求头\s*\n([\s\S]+?)\n\n', content)
-    if not req_table_match:
-        return None
-
-    table = req_table_match.group(1)
-    lines = [line.strip() for line in table.splitlines() if '|' in line]
-    if len(lines) < 3:  # 表头 + 分隔行 + 至少一行数据
-        return None
-
-    headers = [h.strip() for h in lines[0].split('|')[1:-1]]
-
-    # 构建请求体schema
-    schema = {
-        'type': 'object',
-        'properties': {},
-        'required': []
-    }
-
-    for line in lines[2:]:  # 跳过表头和分隔行
-        cols = [c.strip() for c in line.split('|')[1:-1]]
-        if len(cols) != len(headers):
-            continue
-
-        param = dict(zip(headers, cols))
-        param_name = param.get('名称', '')
-        param_type = param.get('类型', '').lower()
-        param_required = param.get('必填', '') == '是'
-        param_desc = param.get('描述', '')
-
-        # 跳过Token参数，它应该在header中
-        if param_name.lower() == 'token':
-            continue
-
-        # 添加属性
-        schema['properties'][param_name] = determine_schema_type(param_type, param_desc)
-
-        # 添加必填字段
-        if param_required:
-            schema['required'].append(param_name)
-
-    # 如果没有属性，返回None
-    if not schema['properties']:
-        return None
-
-    # 如果没有必填字段，删除required数组
-    if not schema['required']:
-        del schema['required']
-
-    return {
-        'description': '请求参数',
-        'required': True,
-        'content': {
-            'application/json': {
-                'schema': schema
-            }
-        }
-    }
 
 
 def parse_info_md(info_path):
@@ -521,31 +469,82 @@ def extract_schemas_from_apis(api_list):
 
 def generate_operation_id(path, method):
     """
-    生成唯一的operationId
-    格式: [method][Resource][Action]
-    例如: getProductsList, createUser, updateUserProfile
+    生成唯一且语义清晰的 operationId，避免重复
     """
-    # 清理路径，移除参数占位符
-    clean_path = re.sub(r'[:{][^/{}]+[}]?', '', path)
+    # 判断是否有路径参数
+    has_path_param = '{' in path and '}' in path
 
     # 分割路径
-    parts = [p for p in clean_path.strip('/').split('/') if p]
+    parts = [p for p in path.strip('/').split('/') if p]
 
-    # 确定资源名称和操作
-    resource = parts[0] if parts else ''
-    action = '_'.join(parts[1:]) if len(parts) > 1 else ''
+    # 主资源
+    resource = parts[0] if len(parts) > 0 else ''
+    resource_camel = resource[0].upper() + resource[1:] if resource else ''
 
-    # 转换为驼峰命名
-    resource = resource[0].upper() + resource[1:] if resource else ''
-    if action:
-        action = action[0].upper() + action[1:]
+    # 子资源（如果有）
+    subresource = ''
+    if len(parts) > 2:
+        subresource = parts[2]
+    elif len(parts) > 1 and not ('{' in parts[1] and '}' in parts[1]):
+        subresource = parts[1]
 
-    # 生成operationId
-    operation_id = method.lower()
-    if resource:
-        operation_id += resource
-    if action:
-        operation_id += action
+    subresource_camel = ''
+    if subresource:
+        subresource_camel = subresource[0].upper() + subresource[1:]
+
+    method_lower = method.lower()
+
+    # 生成 operationId
+    if method_lower == 'get':
+        if has_path_param:
+            if subresource_camel:
+                operation_id = f'get{resource_camel}{subresource_camel}ById'
+            else:
+                operation_id = f'get{resource_camel}ById'
+        else:
+            if subresource_camel:
+                operation_id = f'list{resource_camel}{subresource_camel}'
+            else:
+                operation_id = f'list{resource_camel}'
+    elif method_lower == 'post':
+        if has_path_param:
+            if subresource_camel:
+                operation_id = f'post{resource_camel}{subresource_camel}ById'
+            else:
+                operation_id = f'post{resource_camel}ById'
+        else:
+            if subresource_camel:
+                operation_id = f'create{resource_camel}{subresource_camel}'
+            else:
+                operation_id = f'create{resource_camel}'
+    elif method_lower == 'put':
+        if has_path_param:
+            if subresource_camel:
+                operation_id = f'update{resource_camel}{subresource_camel}ById'
+            else:
+                operation_id = f'update{resource_camel}ById'
+        else:
+            if subresource_camel:
+                operation_id = f'update{resource_camel}{subresource_camel}'
+            else:
+                operation_id = f'update{resource_camel}'
+    elif method_lower == 'delete':
+        if has_path_param:
+            if subresource_camel:
+                operation_id = f'delete{resource_camel}{subresource_camel}ById'
+            else:
+                operation_id = f'delete{resource_camel}ById'
+        else:
+            if subresource_camel:
+                operation_id = f'delete{resource_camel}{subresource_camel}'
+            else:
+                operation_id = f'delete{resource_camel}'
+    else:
+        # 其他HTTP方法，简单拼接
+        if subresource_camel:
+            operation_id = f'{method_lower}{resource_camel}{subresource_camel}'
+        else:
+            operation_id = f'{method_lower}{resource_camel}'
 
     return operation_id
 
