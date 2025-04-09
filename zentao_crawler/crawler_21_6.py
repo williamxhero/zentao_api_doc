@@ -200,52 +200,105 @@ class WebCrawler_21_6(BaseWebCrawler):
                         # 点击菜单项
                         self.driver.execute_script("arguments[0].scrollIntoView(true);", api_link)
                         api_link.click()
-                        time.sleep(1)  # 等待详情加载
 
-                        # 提取请求方法
+                        # 增加等待时间，确保页面完全加载
+                        time.sleep(3)  # 增加等待时间
+
+                        # 使用显式等待，等待方法元素出现
                         try:
-                            method_elem = self.driver.find_element(By.XPATH, "/html/body/div[1]/div/div[2]/div[2]/div/div[1]/div[1]")
+                            method_elem = WebDriverWait(self.driver, 5).until(
+                                EC.presence_of_element_located((By.XPATH, "/html/body/div[1]/div/div[2]/div[2]/div/div[1]/div[1]"))
+                            )
                             method = method_elem.text.strip()
-                        except:
+                            logger.info(f"检测到API方法: {method}")
+                        except Exception as e:
+                            logger.warning(f"未能检测到API方法: {str(e)}")
                             method = ""
 
                         # 提取API URL
                         try:
-                            url_elem = self.driver.find_element(By.XPATH, "/html/body/div[1]/div/div[2]/div[2]/div/div[1]/div[2]")
+                            url_elem = WebDriverWait(self.driver, 5).until(
+                                EC.presence_of_element_located((By.XPATH, "/html/body/div[1]/div/div[2]/div[2]/div/div[1]/div[2]"))
+                            )
                             api_url = url_elem.text.strip()
-                        except:
+                            logger.info(f"检测到API URL: {api_url}")
+                        except Exception as e:
+                            logger.warning(f"未能检测到API URL: {str(e)}")
                             api_url = ""
 
                         # 提取描述
                         try:
-                            desc_elem = self.driver.find_element(By.XPATH, "/html/body/div[1]/div/div[2]/div[2]/div/div[2]/h2")
+                            desc_elem = WebDriverWait(self.driver, 5).until(
+                                EC.presence_of_element_located((By.XPATH, "/html/body/div[1]/div/div[2]/div[2]/div/div[2]/h2"))
+                            )
                             description = desc_elem.text.strip()
-                        except:
+                            logger.info(f"检测到API描述: {description}")
+                        except Exception as e:
+                            logger.warning(f"未能检测到API描述: {str(e)}")
                             description = ""
 
                         # 请求头表格
                         req_md = ""
                         try:
-                            req_table_elem = self.driver.find_element(By.XPATH, "/html/body/div[1]/div/div[2]/div[2]/div/div[2]/div[2]/table[1]")
+                            # 使用显式等待，等待请求表格出现
+                            req_table_elem = WebDriverWait(self.driver, 5).until(
+                                EC.presence_of_element_located((By.XPATH, "/html/body/div[1]/div/div[2]/div[2]/div/div[2]/div[2]/table[1]"))
+                            )
                             req_md = self.parse_table_recursive(req_table_elem)
-                        except:
-                            pass
+                            logger.info("成功解析请求头表格")
+                        except Exception as e:
+                            logger.warning(f"未能解析请求头表格: {str(e)}")
 
                         # 响应参数表格
                         resp_md = ""
                         try:
-                            resp_table_elem = self.driver.find_element(By.XPATH, "/html/body/div[1]/div/div[2]/div[2]/div/div[2]/div[2]/table[2]")
+                            # 使用显式等待，等待响应表格出现
+                            resp_table_elem = WebDriverWait(self.driver, 5).until(
+                                EC.presence_of_element_located((By.XPATH, "/html/body/div[1]/div/div[2]/div[2]/div/div[2]/div[2]/table[2]"))
+                            )
                             resp_md = self.parse_table_recursive(resp_table_elem)
-                        except:
-                            pass
+                            logger.info("成功解析响应参数表格")
+                        except Exception as e:
+                            logger.warning(f"未能解析响应参数表格: {str(e)}")
 
                         # 响应示例
                         resp_example = ""
                         try:
-                            resp_pre = self.driver.find_element(By.XPATH, "/html/body/div[1]/div/div[2]/div[2]/div/div[2]/div[2]/pre")
+                            # 使用显式等待，等待响应示例出现
+                            resp_pre = WebDriverWait(self.driver, 5).until(
+                                EC.presence_of_element_located((By.XPATH, "/html/body/div[1]/div/div[2]/div[2]/div/div[2]/div[2]/pre"))
+                            )
                             resp_example = resp_pre.text.strip()
-                        except:
-                            pass
+                            logger.info("成功提取响应示例")
+                        except Exception as e:
+                            logger.warning(f"未能提取响应示例: {str(e)}")
+
+                        # 验证是否获取到有效内容
+                        if not method or not api_url:
+                            logger.warning(f"未能获取到有效的API方法或URL，尝试重新加载页面")
+                            # 尝试重新加载页面
+                            api_link.click()
+                            time.sleep(5)  # 等待更长时间
+
+                            # 重新获取方法
+                            try:
+                                method_elem = WebDriverWait(self.driver, 5).until(
+                                    EC.presence_of_element_located((By.XPATH, "/html/body/div[1]/div/div[2]/div[2]/div/div[1]/div[1]"))
+                                )
+                                method = method_elem.text.strip()
+                                logger.info(f"重试后检测到API方法: {method}")
+                            except Exception as e:
+                                logger.warning(f"重试后仍未能检测到API方法: {str(e)}")
+
+                            # 重新获取URL
+                            try:
+                                url_elem = WebDriverWait(self.driver, 5).until(
+                                    EC.presence_of_element_located((By.XPATH, "/html/body/div[1]/div/div[2]/div[2]/div/div[1]/div[2]"))
+                                )
+                                api_url = url_elem.text.strip()
+                                logger.info(f"重试后检测到API URL: {api_url}")
+                            except Exception as e:
+                                logger.warning(f"重试后仍未能检测到API URL: {str(e)}")
 
                         # 生成简洁markdown内容
                         md = f"### {method} {api_url}\n\n"
@@ -263,16 +316,23 @@ class WebCrawler_21_6(BaseWebCrawler):
                             md += "#### 响应示例\n\n"
                             md += f"```json\n{resp_example}\n```\n"
 
-                        # 生成英文文件名
+                        # 生成英文文件名，包含HTTP方法
                         if api_url:
+                            # 将URL转换为安全的文件名
                             safe_name = api_url.strip().replace("/", "_").replace(":", "_").strip("_")
                             safe_name = re.sub(r'[\\/*?:"<>|]', "_", safe_name)
+
+                            # 添加HTTP方法到文件名中，避免不同方法的同一URL覆盖
+                            if method:
+                                safe_name = f"{method.lower()}_{safe_name}"
+
                             if not safe_name:
                                 safe_name = f"api_{idx+1}"
                         else:
                             safe_name = f"api_{idx+1}"
 
                         filename = os.path.join(self.output_dir, f"{safe_name}.md")
+                        logger.info(f"生成文件名: {filename}")
                         with open(filename, "w", encoding="utf-8") as f:
                             f.write(md)
                         logger.info(f"已保存: {filename}")

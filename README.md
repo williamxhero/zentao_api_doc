@@ -30,7 +30,7 @@
 ├── api_doc/                # 爬取结果目录
 │   ├── *.md               # 各API的Markdown文档
 │   ├── info.md            # 爬虫元信息
-│   └── openapi_generated.yaml  # 生成的OpenAPI文件
+│   └── zentao_api_docs.yaml.yaml  # 生成的OpenAPI文件
 └── zentao_crawler/         # 爬虫核心代码
     ├── __init__.py
     ├── base_crawler.py     # 爬虫基类
