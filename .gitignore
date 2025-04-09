@@ -1,0 +1,7 @@
+/.clinerules
+/.cursor
+/.venv
+/.vscode
+/api_doc
+/output
+__pycache__

@@ -1,0 +1,1188 @@
+openapi: 3.0.0
+info:
+  title: Zentao API
+  version: '21.6'
+  description: '禅道版本: 21.6
+
+    爬取时间: 2025-04-09 12:02:58
+
+    API文档URL: http://192.168.0.72/zentao/dev-api-restapi.html
+
+    账号: the_account'
+servers:
+- url: http://192.168.0.72/zentao/dev-api-restapi.html
+paths:
+  /bugs/:id:
+    delete:
+      summary: 删除Bug
+      parameters:
+      - name: Token
+        in: query
+        required: true
+        description: 认证凭证Token
+        schema:
+          type: string
+      responses:
+        '200':
+          description: 成功响应
+          content:
+            application/json:
+              schema:
+                type: object
+              example: "{\n    \"message\": \"success\"\n}"
+  /builds/:id:
+    delete:
+      summary: 删除版本
+      parameters:
+      - name: Token
+        in: query
+        required: true
+        description: 认证凭证Token
+        schema:
+          type: string
+      responses:
+        '200':
+          description: 成功响应
+          content:
+            application/json:
+              schema:
+                type: object
+              example: "{\n    \"id\": 3,\n    \"project\": 41,\n    \"product\":\
+                \ 4,\n    \"branch\": 0,\n    \"execution\": 42,\n    \"name\": \"\
+                test\",\n    \"scmPath\": \"\",\n    \"filePath\": \"\",\n    \"date\"\
+                : \"2021-01-01\",\n    \"stories\": \"\",\n    \"bugs\": \"\",\n \
+                \   \"builder\": \"admin\",\n    \"desc\": \"\",\n    \"deleted\"\
+                : \"0\",\n    \"executionName\": \"testt\",\n    \"productName\":\
+                \ \"多分支产品\",\n    \"productType\": \"branch\",\n    \"files\": []\n\
+                }"
+  /executions/:id:
+    delete:
+      summary: 删除执行
+      parameters:
+      - name: Token
+        in: query
+        required: true
+        description: 认证凭证Token
+        schema:
+          type: string
+      responses:
+        '200':
+          description: 成功响应
+          content:
+            application/json:
+              schema:
+                type: object
+              example: "{\n    ”message\": \"success\"\n}"
+  /executions/:id/builds:
+    get:
+      summary: 获取执行版本列表
+      parameters:
+      - name: Token
+        in: query
+        required: true
+        description: 认证凭证Token
+        schema:
+          type: string
+      responses:
+        '200':
+          description: 成功响应
+          content:
+            application/json:
+              schema:
+                type: object
+              example: "{\n    \"total\": 1,\n    \"builds\": [\n        {\n     \
+                \       \"id\": 2,\n            \"project\": 12,\n            \"product\"\
+                : 5,\n            \"branch\": 0,\n            \"execution\": 40,\n\
+                \            \"name\": \"1111111\",\n            \"scmPath\": \"\"\
+                ,\n            \"filePath\": \"\",\n            \"date\": \"2021-12-01\"\
+                ,\n            \"stories\": [],\n            \"bugs\": [],\n     \
+                \       \"builder\": \"admin\",\n            \"desc\": \"\",\n   \
+                \         \"deleted\": false,\n            \"executionName\": \"测试执行1111111\"\
+                ,\n            \"executionID\": 40,\n            \"productName\":\
+                \ \"测试\",\n            \"branchName\": \"\"\n        }\n    ]\n}"
+  /executions/:id/stories:
+    get:
+      summary: 获取执行需求列表
+      parameters:
+      - name: Token
+        in: query
+        required: true
+        description: 认证凭证Token
+        schema:
+          type: string
+      responses:
+        '200':
+          description: 成功响应
+          content:
+            application/json:
+              schema:
+                type: object
+              example: "\"page\": 1,\n    \"total\": 1,\n    \"limit\": 20,\n    \"\
+                stories\": [\n        {\n            \"id\": 7,\n            \"parent\"\
+                : 0,\n            \"product\": 1,\n            \"branch\": 0,\n  \
+                \          \"module\": 7,\n            \"plan\": \"1\",\n        \
+                \    \"source\": \"po\",\n            \"sourceNote\": \"\",\n    \
+                \        \"fromBug\": 0,\n            \"title\": \"关于我们的设计和开发\",\n\
+                \            \"keywords\": \"\",\n            \"type\": \"story\"\
+                ,\n            \"category\": \"feature\",\n            \"pri\": 1,\n\
+                \            \"estimate\": 1,\n            \"status\": \"draft\",\n\
+                \            \"subStatus\": \"\",\n            \"color\": \"\",\n\
+                \            \"stage\": \"planned\",\n            \"stagedBy\": \"\
+                \",\n            \"mailto\": \"\",\n            \"openedBy\": \"productManager\"\
+                ,\n            \"openedDate\": \"2012-06-05T02:24:19Z\",\n       \
+                \     \"assignedTo\": \"productManager\",\n            \"assignedDate\"\
+                : \"2012-06-05T02:24:19Z\",\n            \"lastEditedBy\": \"\",\n\
+                \            \"lastEditedDate\": null,\n            \"reviewedBy\"\
+                : \"\",\n            \"reviewedDate\": null,\n            \"closedBy\"\
+                : \"\",\n            \"closedDate\": null,\n            \"closedReason\"\
+                : \"\",\n            \"toBug\": 0,\n            \"childStories\":\
+                \ \"\",\n            \"linkStories\": \"\",\n            \"duplicateStory\"\
+                : 0,\n            \"version\": 1,\n            \"URChanged\": \"0\"\
+                ,\n            \"deleted\": false,\n            \"planTitle\": \"\
+                1.0版本 \"\n        }\n    ]\n}"
+  /executions/:id/tasks:
+    post:
+      summary: 创建任务
+      parameters:
+      - name: Token
+        in: query
+        required: true
+        description: 认证凭证Token
+        schema:
+          type: string
+      responses:
+        '200':
+          description: 成功响应
+          content:
+            application/json:
+              schema:
+                type: object
+              example: "{\n    \"name\": \"testtt\",\n    \"assignedTo\": [ \"admin\"\
+                \ ],\n    \"type\": \"devel\",\n    \"estStarted\": \"2021-12-01\"\
+                ,\n    \"deadline\": \"2021-12-31\"\n}"
+  /feedbacks:
+    post:
+      summary: 创建反馈
+      parameters:
+      - name: Token
+        in: query
+        required: true
+        description: 认证凭证Token
+        schema:
+          type: string
+      responses:
+        '200':
+          description: 成功响应
+          content:
+            application/json:
+              schema:
+                type: object
+              example: "{\n    \"product\": 2,\n    \"title\":\"create test feedback\"\
+                \n}"
+  /feedbacks/:id:
+    delete:
+      summary: 删除反馈
+      parameters:
+      - name: Token
+        in: query
+        required: true
+        description: 认证凭证Token
+        schema:
+          type: string
+      responses:
+        '200':
+          description: 成功响应
+          content:
+            application/json:
+              schema:
+                type: object
+              example: "{\n    \"message\": \"success\"\n}"
+  /feedbacks/:id/assign:
+    post:
+      summary: 指派反馈
+      parameters:
+      - name: Token
+        in: query
+        required: true
+        description: 认证凭证Token
+        schema:
+          type: string
+      responses:
+        '200':
+          description: 成功响应
+          content:
+            application/json:
+              schema:
+                type: object
+              example: "{\n    \"assignedTo\": \"admin\",\n    \"comment\":\"yes\"\
+                \n}"
+  /feedbacks/:id/close:
+    post:
+      summary: 关闭反馈
+      parameters:
+      - name: Token
+        in: query
+        required: true
+        description: 认证凭证Token
+        schema:
+          type: string
+      responses:
+        '200':
+          description: 成功响应
+          content:
+            application/json:
+              schema:
+                type: object
+              example: "{\n    \"closedReason\":\"repeat\"\n}"
+  /productplans/:id:
+    put:
+      summary: 修改计划
+      parameters:
+      - name: Token
+        in: query
+        required: true
+        description: 认证凭证Token
+        schema:
+          type: string
+      responses:
+        '200':
+          description: 成功响应
+          content:
+            application/json:
+              schema:
+                type: object
+              example: "{\n    \"id\": 2,\n    \"product\": 4,\n    \"branch\": 0,\n\
+                \    \"parent\": 0,\n    \"title\": \"主干计划\",\n    \"desc\": \"\"\
+                ,\n    \"begin\": \"2021-11-23\",\n    \"end\": \"2021-11-29\",\n\
+                \    \"order\": \"\",\n    \"deleted\": false,\n    \"stories\": [\n\
+                \        {\n            \"story\": 12,\n            \"plan\": \"2\"\
+                ,\n            \"order\": 1,\n            \"id\": 12,\n          \
+                \  \"parent\": 0,\n            \"product\": 4,\n            \"branch\"\
+                : 0,\n            \"module\": 23,\n            \"source\": \"\",\n\
+                \            \"sourceNote\": \"\",\n            \"fromBug\": 0,\n\
+                \            \"title\": \"主干需求\",\n            \"keywords\": \"\"\
+                ,\n            \"type\": \"story\",\n            \"category\": \"\
+                feature\",\n            \"pri\": 0,\n            \"estimate\": 0,\n\
+                \            \"status\": \"active\",\n            \"subStatus\": \"\
+                \",\n            \"color\": \"\",\n            \"stage\": \"planned\"\
+                ,\n            \"stagedBy\": \"\",\n            \"mailto\": null,\n\
+                \            \"openedBy\": \"admin\",\n            \"openedDate\"\
+                : \"2021-11-23 16:04:30\",\n            \"assignedTo\": \"admin\"\
+                ,\n            \"assignedDate\": \"2021-11-23 19:42:55\",\n      \
+                \      \"lastEditedBy\": \"admin\",\n            \"lastEditedDate\"\
+                : \"2021-11-23 19:42:55\",\n            \"reviewedBy\": \"\",\n  \
+                \          \"reviewedDate\": \"0000-00-00 00:00:00\",\n          \
+                \  \"closedBy\": \"\",\n            \"closedDate\": \"0000-00-00 00:00:00\"\
+                ,\n            \"closedReason\": \"\",\n            \"toBug\": 0,\n\
+                \            \"childStories\": \"\",\n            \"linkStories\"\
+                : \"\",\n            \"duplicateStory\": 0,\n            \"version\"\
+                : 1,\n            \"URChanged\": \"0\",\n            \"deleted\":\
+                \ \"0\"\n        }\n    ],\n    \"bugs\": [\n        {\n         \
+                \   \"id\": 5,\n            \"project\": 0,\n            \"product\"\
+                : 4,\n            \"branch\": 1,\n            \"module\": 24,\n  \
+                \          \"execution\": 0,\n            \"plan\": 2,\n         \
+                \   \"story\": 0,\n            \"storyVersion\": 1,\n            \"\
+                task\": 0,\n            \"toTask\": 0,\n            \"toStory\": 0,\n\
+                \            \"title\": \"Bug1\",\n            \"keywords\": \"\"\
+                ,\n            \"severity\": 3,\n            \"pri\": 3,\n       \
+                \     \"type\": \"codeerror\",\n            \"os\": \"\",\n      \
+                \      \"browser\": \"\",\n            \"hardware\": \"\",\n     \
+                \       \"found\": \"\",\n            \"steps\": \"<p>[步骤]</p><br\
+                \ /><p>[结果]</p><br /><p>[期望]</p><br />\",\n            \"status\"\
+                : \"active\",\n            \"subStatus\": \"\",\n            \"color\"\
+                : \"\",\n            \"confirmed\": 0,\n            \"activatedCount\"\
+                : 0,\n            \"activatedDate\": \"0000-00-00 00:00:00\",\n  \
+                \          \"mailto\": \"\",\n            \"openedBy\": \"admin\"\
+                ,\n            \"openedDate\": \"2021-11-29 13:02:34\",\n        \
+                \    \"openedBuild\": \"trunk\",\n            \"assignedTo\": \"\"\
+                ,\n            \"assignedDate\": \"0000-00-00 00:00:00\",\n      \
+                \      \"deadline\": \"2021-11-29\",\n            \"resolvedBy\":\
+                \ \"\",\n            \"resolution\": \"\",\n            \"resolvedBuild\"\
+                : \"\",\n            \"resolvedDate\": \"0000-00-00 00:00:00\",\n\
+                \            \"closedBy\": \"\",\n            \"closedDate\": \"0000-00-00\
+                \ 00:00:00\",\n            \"duplicateBug\": 0,\n            \"linkBug\"\
+                : \"\",\n            \"case\": 0,\n            \"caseVersion\": 0,\n\
+                \            \"result\": 0,\n            \"repo\": 0,\n          \
+                \  \"entry\": \"\",\n            \"lines\": \"\",\n            \"\
+                v1\": \"\",\n            \"v2\": \"\",\n            \"repoType\":\
+                \ \"\",\n            \"testtask\": 0,\n            \"lastEditedBy\"\
+                : \"\",\n            \"lastEditedDate\": \"0000-00-00 00:00:00\",\n\
+                \            \"deleted\": \"0\"\n        }\n    ]\n}"
+  /productplans/:id/linkstories:
+    post:
+      summary: 产品计划关联需求
+      parameters:
+      - name: Token
+        in: query
+        required: true
+        description: 认证凭证Token
+        schema:
+          type: string
+      responses:
+        '200':
+          description: 成功响应
+          content:
+            application/json:
+              schema:
+                type: object
+              example: "{\n    \"stories\": [ 11 ]\n}"
+  /productplans/:id/unlinkbugs:
+    post:
+      summary: 产品计划取消关联Bug
+      parameters:
+      - name: Token
+        in: query
+        required: true
+        description: 认证凭证Token
+        schema:
+          type: string
+      responses:
+        '200':
+          description: 成功响应
+          content:
+            application/json:
+              schema:
+                type: object
+              example: "{\n    \"bugs\": [7]\n}"
+  /productplans/:id/unlinkstories:
+    post:
+      summary: 产品计划取消关联需求
+      parameters:
+      - name: Token
+        in: query
+        required: true
+        description: 认证凭证Token
+        schema:
+          type: string
+      responses:
+        '200':
+          description: 成功响应
+          content:
+            application/json:
+              schema:
+                type: object
+              example: "{\n    \"stories\": [11]\n}"
+  /products:
+    get:
+      summary: 获取产品列表
+      parameters:
+      - name: Token
+        in: query
+        required: false
+        description: 认证凭证Token
+        schema:
+          type: string
+      responses:
+        '200':
+          description: 成功响应
+          content:
+            application/json:
+              schema:
+                type: object
+              example: "{\n    \"total\": 1,\n    \"products\": [\n        {\n   \
+                \         \"id\": 6,\n            \"program\": 6,\n            \"\
+                name\": \"测试\",\n            \"code\": \"\",\n            \"bind\"\
+                : \"1\",\n            \"line\": 0,\n            \"type\": \"normal\"\
+                ,\n            \"status\": \"normal\",\n            \"subStatus\"\
+                : \"\",\n            \"desc\": \"\",\n            \"PO\": {\n    \
+                \            \"id\": 2,\n                \"account\": \"productManager\"\
+                ,\n                \"avatar\": \"\",\n                \"realname\"\
+                : \"产品经理\"\n            },\n            \"QD\": {\n              \
+                \  \"id\": 1,\n                \"account\": \"admin\",\n         \
+                \       \"avatar\": \"\",\n                \"realname\": \"管理员\"\n\
+                \            },\n            \"RD\": {\n                \"id\": 2,\n\
+                \                \"account\": \"productManager\",\n              \
+                \  \"avatar\": \"\",\n                \"realname\": \"产品经理\"\n   \
+                \         },\n            \"acl\": \"private\",\n            \"whitelist\"\
+                : [\n                {\n                    \"id\": 1,\n         \
+                \           \"account\": \"admin\",\n                    \"avatar\"\
+                : \"\",\n                    \"realname\": \"管理员\"\n             \
+                \   },\n                {\n                    \"id\": 2,\n      \
+                \              \"account\": \"productManager\",\n                \
+                \    \"avatar\": \"\",\n                    \"realname\": \"产品经理\"\
+                \n                }\n            ],\n            \"reviewer\": \"\"\
+                ,\n            \"createdBy\": {\n                \"id\": 1,\n    \
+                \            \"account\": \"admin\",\n                \"avatar\":\
+                \ \"\",\n                \"realname\": \"管理员\"\n            },\n \
+                \           \"createdDate\": \"2021-12-01T05:17:04Z\",\n         \
+                \   \"createdVersion\": \"15.8\",\n            \"order\": 30,\n  \
+                \          \"deleted\": \"0\",\n            \"lineName\": \"\",\n\
+                \            \"programName\": \"企业管理\",\n            \"stories\":\
+                \ {\n                \"0\": \"\",\n                \"1\": \"draft\"\
+                ,\n                \"2\": \"active\",\n                \"3\": \"closed\"\
+                ,\n                \"4\": \"changed\",\n                \"\": 0,\n\
+                \                \"draft\": 0,\n                \"active\": 0,\n \
+                \               \"closed\": 0,\n                \"changed\": 0\n \
+                \           },\n            \"requirements\": {\n                \"\
+                0\": \"\",\n                \"1\": \"draft\",\n                \"\
+                2\": \"active\",\n                \"3\": \"closed\",\n           \
+                \     \"4\": \"changed\",\n                \"\": 0,\n            \
+                \    \"draft\": 0,\n                \"active\": 0,\n             \
+                \   \"closed\": 0,\n                \"changed\": 0\n            },\n\
+                \            \"plans\": 0,\n            \"releases\": 0,\n       \
+                \     \"bugs\": 0,\n            \"unResolved\": 0,\n            \"\
+                closedBugs\": 0,\n            \"fixedBugs\": 0,\n            \"thisWeekBugs\"\
+                : 0,\n            \"assignToNull\": 0,\n            \"progress\":\
+                \ 0\n        }\n    ]\n}"
+  /productsplan/:id:
+    delete:
+      summary: 删除计划
+      parameters:
+      - name: Token
+        in: query
+        required: true
+        description: 认证凭证Token
+        schema:
+          type: string
+      responses:
+        '200':
+          description: 成功响应
+          content:
+            application/json:
+              schema:
+                type: object
+              example: "{\n    \"message\": \"success\"\n}"
+  /products/:id:
+    get:
+      summary: 获取产品详情
+      parameters:
+      - name: Token
+        in: query
+        required: true
+        description: 认证凭证Token
+        schema:
+          type: string
+      responses:
+        '200':
+          description: 成功响应
+          content:
+            application/json:
+              schema:
+                type: object
+              example: "{\n    \"id\": 1,\n    \"program\": 6,\n    \"name\": \"公司企业网站建设1\"\
+                ,\n    \"code\": \"companyWebsite\",\n    \"bind\": \"0\",\n    \"\
+                line\": 0,\n    \"type\": \"normal\",\n    \"status\": \"normal\"\
+                ,\n    \"subStatus\": \"\",\n    \"desc\": \"建立公司企业网站，可以更好对外展示。<br\
+                \ />\",\n    \"PO\": {\n        \"id\": 2,\n        \"account\": \"\
+                productManager\",\n        \"avatar\": \"\",\n        \"realname\"\
+                : \"产品经理\"\n    },\n    \"QD\": {\n        \"id\": 10,\n        \"\
+                account\": \"testManager\",\n        \"avatar\": \"\",\n        \"\
+                realname\": \"测试经理\"\n    },\n    \"RD\": {\n        \"id\": 2,\n\
+                \        \"account\": \"productManager\",\n        \"avatar\": \"\"\
+                ,\n        \"realname\": \"产品经理\"\n    },\n    \"acl\": \"open\",\n\
+                \    \"whitelist\": [],\n    \"reviewer\": \"\",\n    \"createdBy\"\
+                : {\n        \"id\": 2,\n        \"account\": \"productManager\",\n\
+                \        \"avatar\": \"\",\n        \"realname\": \"产品经理\"\n    },\n\
+                \    \"createdDate\": \"2012-06-05T01:57:07Z\",\n    \"createdVersion\"\
+                : \"\",\n    \"order\": 5,\n    \"deleted\": \"0\",\n    \"stories\"\
+                : {\n        \"active\": 5,\n        \"draft\": 3,\n        \"\":\
+                \ 0,\n        \"closed\": 0,\n        \"changed\": 0\n    },\n   \
+                \ \"plans\": 0,\n    \"releases\": 0,\n    \"builds\": 0,\n    \"\
+                cases\": 5,\n    \"projects\": 0,\n    \"executions\": 0,\n    \"\
+                bugs\": 5,\n    \"docs\": 0,\n    \"progress\": 0,\n    \"caseReview\"\
+                : false\n}"
+  /products/:id/bugs:
+    post:
+      summary: 创建Bug
+      parameters:
+      - name: Token
+        in: query
+        required: true
+        description: 认证凭证Token
+        schema:
+          type: string
+      responses:
+        '200':
+          description: 成功响应
+          content:
+            application/json:
+              schema:
+                type: object
+              example: "{\n    \"title\": \"Bug2\",\n    \"severity\": 1,\n    \"\
+                pri\": 1,\n    \"steps\": \"\",\n    \"type\": \"codeerror\",\n  \
+                \  \"openedBuild\": [\n        \"trunk\"\n    ]\n}"
+  /products/:id/linkBugs:
+    post:
+      summary: 产品计划关联Bug
+      parameters:
+      - name: bugs
+        in: query
+        required: true
+        description: 关联的Bug ID，比如 [1, 2]
+        schema:
+          type: string
+      responses:
+        '200':
+          description: 成功响应
+          content:
+            application/json:
+              schema:
+                type: object
+              example: "{\n    \"bugs\": [7]\n}"
+  /products/:id/plans:
+    get:
+      summary: 获取产品计划列表
+      parameters:
+      - name: Token
+        in: query
+        required: true
+        description: 认证凭证Token
+        schema:
+          type: string
+      responses:
+        '200':
+          description: 成功响应
+          content:
+            application/json:
+              schema:
+                type: object
+              example: "{\n    \"page\": 1,\n    \"total\": 1,\n    \"limit\": 20,\n\
+                \    \"plans\": [\n        {\n            \"id\": 1,\n           \
+                \ \"product\": 1,\n            \"branch\": 0,\n            \"parent\"\
+                : 0,\n            \"title\": \"1.0版本\",\n            \"desc\": \"\
+                开发出企业网站1.0版本。<br />\",\n            \"begin\": \"2020-06-05\",\n \
+                \           \"end\": \"2021-06-04\",\n            \"order\": \"\"\
+                ,\n            \"deleted\": \"0\",\n            \"stories\": 6,\n\
+                \            \"bugs\": 0,\n            \"hour\": 5,\n            \"\
+                project\": \"\",\n            \"projectID\": \"\"\n        }\n   \
+                \ ]\n}"
+  /products/:id/releases:
+    get:
+      summary: 获取产品发布列表
+      parameters:
+      - name: Token
+        in: query
+        required: true
+        description: 认证凭证Token
+        schema:
+          type: string
+      responses:
+        '200':
+          description: 成功响应
+          content:
+            application/json:
+              schema:
+                type: object
+              example: "{\n    \"total\": 1,\n    \"releases\": [\n        {\n   \
+                \         \"id\": 1,\n            \"project\": 41,\n            \"\
+                product\": 4,\n            \"branch\": 0,\n            \"build\":\
+                \ 3,\n            \"name\": \"发布test\",\n            \"marker\": \"\
+                0\",\n            \"date\": \"2021-12-02\",\n            \"stories\"\
+                : \"\",\n            \"bugs\": \"\",\n            \"leftBugs\": \"\
+                \",\n            \"desc\": \"\",\n            \"mailto\": \"\",\n\
+                \            \"notify\": null,\n            \"status\": \"normal\"\
+                ,\n            \"subStatus\": \"\",\n            \"deleted\": false,\n\
+                \            \"productName\": \"多分支产品\",\n            \"buildID\"\
+                : 3,\n            \"buildName\": \"test\",\n            \"projectName\"\
+                : \"测试\"\n        }\n    ]\n}"
+  /products/:id/stories:
+    get:
+      summary: 获取产品需求列表
+      parameters:
+      - name: Token
+        in: query
+        required: true
+        description: 认证凭证Token
+        schema:
+          type: string
+      responses:
+        '200':
+          description: 成功响应
+          content:
+            application/json:
+              schema:
+                type: object
+              example: "\"page\": 1,\n    \"total\": 1,\n    \"limit\": 20,\n    \"\
+                stories\": [\n        {\n            \"id\": 7,\n            \"parent\"\
+                : 0,\n            \"product\": 1,\n            \"branch\": 0,\n  \
+                \          \"module\": 7,\n            \"plan\": \"1\",\n        \
+                \    \"source\": \"po\",\n            \"sourceNote\": \"\",\n    \
+                \        \"fromBug\": 0,\n            \"title\": \"关于我们的设计和开发\",\n\
+                \            \"keywords\": \"\",\n            \"type\": \"story\"\
+                ,\n            \"category\": \"feature\",\n            \"pri\": 1,\n\
+                \            \"estimate\": 1,\n            \"status\": \"draft\",\n\
+                \            \"subStatus\": \"\",\n            \"color\": \"\",\n\
+                \            \"stage\": \"planned\",\n            \"stagedBy\": \"\
+                \",\n            \"mailto\": \"\",\n            \"openedBy\": \"productManager\"\
+                ,\n            \"openedDate\": \"2012-06-05T02:24:19Z\",\n       \
+                \     \"assignedTo\": \"productManager\",\n            \"assignedDate\"\
+                : \"2012-06-05T02:24:19Z\",\n            \"lastEditedBy\": \"\",\n\
+                \            \"lastEditedDate\": null,\n            \"reviewedBy\"\
+                : \"\",\n            \"reviewedDate\": null,\n            \"closedBy\"\
+                : \"\",\n            \"closedDate\": null,\n            \"closedReason\"\
+                : \"\",\n            \"toBug\": 0,\n            \"childStories\":\
+                \ \"\",\n            \"linkStories\": \"\",\n            \"duplicateStory\"\
+                : 0,\n            \"version\": 1,\n            \"URChanged\": \"0\"\
+                ,\n            \"deleted\": false,\n            \"planTitle\": \"\
+                1.0版本 \"\n        }\n    ]\n}"
+  /products/:id/testcases:
+    post:
+      summary: 创建用例
+      parameters:
+      - name: Token
+        in: query
+        required: true
+        description: 认证凭证Token
+        schema:
+          type: string
+      responses:
+        '200':
+          description: 成功响应
+          content:
+            application/json:
+              schema:
+                type: object
+              example: "{\n    \"title\": \"case1\",\n    \"pri\": 1,\n    \"steps\"\
+                : [\n        {\n            \"desc\": \"步骤1\",\n            \"expect\"\
+                : \"结果1\"\n        }\n    ],\n    \"type\": \"feature\"\n}"
+  /product/:id:
+    delete:
+      summary: 删除产品
+      parameters:
+      - name: Token
+        in: query
+        required: true
+        description: 认证凭证Token
+        schema:
+          type: string
+      responses:
+        '200':
+          description: 成功响应
+          content:
+            application/json:
+              schema:
+                type: object
+              example: "{\n    \"message\": \"success\"\n}"
+  /programs:
+    post:
+      summary: 创建项目集
+      parameters:
+      - name: Token
+        in: query
+        required: true
+        description: 认证凭证Token
+        schema:
+          type: string
+      responses:
+        '200':
+          description: 成功响应
+          content:
+            application/json:
+              schema:
+                type: object
+              example: "{\n    \"id\": 43,\n    \"project\": 0,\n    \"model\": \"\
+                \",\n    \"type\": \"program\",\n    \"lifetime\": \"\",\n    \"budget\"\
+                : \"0\",\n    \"budgetUnit\": \"CNY\",\n    \"attribute\": \"\",\n\
+                \    \"percent\": 0,\n    \"milestone\": \"0\",\n    \"output\": \"\
+                \",\n    \"auth\": \"\",\n    \"parent\": 0,\n    \"path\": \",43,\"\
+                ,\n    \"grade\": 1,\n    \"name\": \"项目集21\",\n    \"code\": \"\"\
+                ,\n    \"begin\": \"2021-09-11\",\n    \"end\": \"2021-12-31\",\n\
+                \    \"realBegan\": null,\n    \"realEnd\": null,\n    \"days\": 0,\n\
+                \    \"status\": \"wait\",\n    \"subStatus\": \"\",\n    \"pri\"\
+                : \"1\",\n    \"desc\": \"\",\n    \"version\": 0,\n    \"parentVersion\"\
+                : 0,\n    \"planDuration\": 0,\n    \"realDuration\": 0,\n    \"openedBy\"\
+                : {\n        \"id\": 1,\n        \"account\": \"admin\",\n       \
+                \ \"avatar\": \"\",\n        \"realname\": \"管理员\"\n    },\n    \"\
+                openedDate\": \"2021-12-03T02:07:36Z\",\n    \"openedVersion\": \"\
+                \",\n    \"lastEditedBy\": \"\",\n    \"lastEditedDate\": null,\n\
+                \    \"closedBy\": null,\n    \"closedDate\": null,\n    \"canceledBy\"\
+                : null,\n    \"canceledDate\": null,\n    \"PO\": null,\n    \"PM\"\
+                : null,\n    \"QD\": null,\n    \"RD\": null,\n    \"team\": \"\"\
+                ,\n    \"acl\": \"private\",\n    \"whitelist\": [\n        {\n  \
+                \          \"id\": 1,\n            \"account\": \"admin\",\n     \
+                \       \"avatar\": \"\",\n            \"realname\": \"管理员\"\n   \
+                \     }\n    ],\n    \"order\": 215,\n    \"deleted\": false\n}"
+  /programs/:id:
+    delete:
+      summary: 删除项目集
+      parameters:
+      - name: Token
+        in: query
+        required: true
+        description: 认证凭证Token
+        schema:
+          type: string
+      responses:
+        '200':
+          description: 成功响应
+          content:
+            application/json:
+              schema:
+                type: object
+              example: "{\n    \"message\": \"sucess\"\n}"
+  /projects:
+    get:
+      summary: 获取项目列表
+      parameters:
+      - name: Token
+        in: query
+        required: true
+        description: 认证凭证Token
+        schema:
+          type: string
+      responses:
+        '200':
+          description: 成功响应
+          content:
+            application/json:
+              schema:
+                type: object
+              example: "{\n    \"page\": 1,\n    \"total\": 2,\n    \"limit\": 20,\n\
+                \    \"projects\": [\n        {\n            \"id\": 7,\n        \
+                \    \"name\": \"企业管理系统\",\n            \"code\": \"\",\n        \
+                \    \"model\": \"scrum\",\n            \"type\": \"project\",\n \
+                \           \"budget\": \"0\",\n            \"budgetUnit\": \"CNY\"\
+                ,\n            \"parent\": 6,\n            \"begin\": \"2021-06-05\"\
+                ,\n            \"end\": \"2022-06-04\",\n            \"status\": \"\
+                doing\",\n            \"openedBy\": \"admin\",\n            \"openedDate\"\
+                : \"2021-04-28T03:22:04Z\",\n            \"PM\": \"projectManager\"\
+                ,\n            \"progress\": 33\n        },\n        {\n         \
+                \   \"id\": 8,\n            \"name\": \"分支项目\",\n            \"code\"\
+                : \"bb\",\n            \"model\": \"scrum\",\n            \"type\"\
+                : \"project\",\n            \"budget\": \"\",\n            \"budgetUnit\"\
+                : \"CNY\",\n            \"parent\": 6,\n            \"begin\": \"\
+                2021-11-23\",\n            \"end\": \"2021-12-23\",\n            \"\
+                status\": \"wait\",\n            \"openedBy\": \"admin\",\n      \
+                \      \"openedDate\": \"2021-11-23T07:45:16Z\",\n            \"PM\"\
+                : \"\",\n            \"progress\": 0\n        }\n    ]\n}"
+  /projects/:id:
+    delete:
+      summary: 删除项目
+      parameters:
+      - name: Token
+        in: query
+        required: true
+        description: 认证凭证Token
+        schema:
+          type: string
+      responses:
+        '200':
+          description: 成功响应
+          content:
+            application/json:
+              schema:
+                type: object
+              example: "{\n    \"message\": \"success\"\n}"
+  /projects/:id/builds:
+    post:
+      summary: 创建版本
+      parameters:
+      - name: Token
+        in: query
+        required: true
+        description: 认证凭证Token
+        schema:
+          type: string
+      responses:
+        '200':
+          description: 成功响应
+          content:
+            application/json:
+              schema:
+                type: object
+              example: "{\n    \"name\": \"test\",\n    \"product\": 4,\n    \"date\"\
+                : \"2021-01-01\",\n    \"execution\": 42,\n    \"builder\": \"admin\"\
+                \n}"
+  /projects/:id/executions:
+    post:
+      summary: 创建执行
+      parameters:
+      - name: Token
+        in: query
+        required: true
+        description: 认证凭证
+        schema:
+          type: string
+      responses:
+        '200':
+          description: 成功响应
+          content:
+            application/json:
+              schema:
+                type: object
+              example: '{"name": "测试执行1", "code": "test1", "begin": "2021-12-01",
+                "end": "2021-12-11", "days": 10}'
+  /projects/:id/releases:
+    get:
+      summary: 获取项目发布列表
+      parameters:
+      - name: Token
+        in: query
+        required: true
+        description: 认证凭证Token
+        schema:
+          type: string
+      responses:
+        '200':
+          description: 成功响应
+          content:
+            application/json:
+              schema:
+                type: object
+              example: "{\n    \"total\": 1,\n    \"releases\": [\n        {\n   \
+                \         \"id\": 1,\n            \"project\": 41,\n            \"\
+                product\": 4,\n            \"branch\": 0,\n            \"build\":\
+                \ 3,\n            \"name\": \"发布test\",\n            \"marker\": \"\
+                0\",\n            \"date\": \"2021-12-02\",\n            \"stories\"\
+                : \"\",\n            \"bugs\": \"\",\n            \"leftBugs\": \"\
+                \",\n            \"desc\": \"\",\n            \"mailto\": \"\",\n\
+                \            \"notify\": null,\n            \"status\": \"normal\"\
+                ,\n            \"subStatus\": \"\",\n            \"deleted\": false,\n\
+                \            \"productName\": \"多分支产品\",\n            \"buildID\"\
+                : 3,\n            \"buildName\": \"test\",\n            \"projectName\"\
+                : \"测试\"\n        }\n    ]\n}"
+  /projects/:id/stories:
+    get:
+      summary: 获取项目需求列表
+      parameters:
+      - name: Token
+        in: query
+        required: true
+        description: 认证凭证Token
+        schema:
+          type: string
+      responses:
+        '200':
+          description: 成功响应
+          content:
+            application/json:
+              schema:
+                type: object
+              example: "\"page\": 1,\n    \"total\": 1,\n    \"limit\": 20,\n    \"\
+                stories\": [\n        {\n            \"id\": 7,\n            \"parent\"\
+                : 0,\n            \"product\": 1,\n            \"branch\": 0,\n  \
+                \          \"module\": 7,\n            \"plan\": \"1\",\n        \
+                \    \"source\": \"po\",\n            \"sourceNote\": \"\",\n    \
+                \        \"fromBug\": 0,\n            \"title\": \"关于我们的设计和开发\",\n\
+                \            \"keywords\": \"\",\n            \"type\": \"story\"\
+                ,\n            \"category\": \"feature\",\n            \"pri\": 1,\n\
+                \            \"estimate\": 1,\n            \"status\": \"draft\",\n\
+                \            \"subStatus\": \"\",\n            \"color\": \"\",\n\
+                \            \"stage\": \"planned\",\n            \"stagedBy\": \"\
+                \",\n            \"mailto\": \"\",\n            \"openedBy\": \"productManager\"\
+                ,\n            \"openedDate\": \"2012-06-05T02:24:19Z\",\n       \
+                \     \"assignedTo\": \"productManager\",\n            \"assignedDate\"\
+                : \"2012-06-05T02:24:19Z\",\n            \"lastEditedBy\": \"\",\n\
+                \            \"lastEditedDate\": null,\n            \"reviewedBy\"\
+                : \"\",\n            \"reviewedDate\": null,\n            \"closedBy\"\
+                : \"\",\n            \"closedDate\": null,\n            \"closedReason\"\
+                : \"\",\n            \"toBug\": 0,\n            \"childStories\":\
+                \ \"\",\n            \"linkStories\": \"\",\n            \"duplicateStory\"\
+                : 0,\n            \"version\": 1,\n            \"URChanged\": \"0\"\
+                ,\n            \"deleted\": false,\n            \"planTitle\": \"\
+                1.0版本 \"\n        }\n    ]\n}"
+  /projects/:id/testtasks:
+    get:
+      summary: 获取项目的测试单
+      parameters:
+      - name: Token
+        in: query
+        required: true
+        description: 认证凭证Token
+        schema:
+          type: string
+      responses:
+        '200':
+          description: 成功响应
+          content:
+            application/json:
+              schema:
+                type: object
+              example: "{\n    \"page\": 1,\n    \"total\": 1,\n    \"limit\": 20,\n\
+                \    \"testtasks\": [\n        {\n            \"id\": 1,\n       \
+                \     \"project\": 0,\n            \"product\": 1,\n            \"\
+                name\": \"企业网站第一期测试任务\",\n            \"execution\": 1,\n        \
+                \    \"build\": \"1\",\n            \"type\": \"\",\n            \"\
+                owner\": \"testManager\",\n            \"pri\": 0,\n            \"\
+                begin\": \"2020-06-05\",\n            \"end\": \"2021-06-21\",\n \
+                \           \"realFinishedDate\": null,\n            \"mailto\": \"\
+                \",\n            \"desc\": \"\",\n            \"report\": \"\",\n\
+                \            \"status\": \"wait\",\n            \"testreport\": 0,\n\
+                \            \"auto\": \"no\",\n            \"subStatus\": \"\",\n\
+                \            \"deleted\": \"0\",\n            \"productName\": \"\
+                公司企业网站建设1\",\n            \"executionName\": \"企业网站第一期\",\n      \
+                \      \"buildName\": \"第一期版本\",\n            \"branch\": 0\n    \
+                \    }\n    ]\n}"
+  /stories:
+    post:
+      summary: 创建需求
+      parameters:
+      - name: Token
+        in: query
+        required: true
+        description: 认证凭证Token
+        schema:
+          type: string
+      responses:
+        '200':
+          description: 成功响应
+          content:
+            application/json:
+              schema:
+                type: object
+              example: "{\n    \"title\": \"测试需求\",\n    \"spec\": \"测试\",\n    \"\
+                product\": 1,\n    \"pri\": 1,\n    \"category\": \"feature\"\n}"
+  /stories/:id:
+    put:
+      summary: 修改需求其他字段
+      parameters:
+      - name: Token
+        in: query
+        required: true
+        description: 认证凭证Token
+        schema:
+          type: string
+      responses:
+        '200':
+          description: 成功响应
+          content:
+            application/json:
+              schema:
+                type: object
+              example: "{\n    \"category\": \"other\"\n}"
+  /stories/:id/change:
+    post:
+      summary: 变更需求
+      parameters:
+      - name: Token
+        in: query
+        required: true
+        description: 认证凭证Token
+        schema:
+          type: string
+      responses:
+        '200':
+          description: 成功响应
+          content:
+            application/json:
+              schema:
+                type: object
+              example: "{\n    \"spec\": \"变更描述\"\n}"
+  /tasks/:id:
+    put:
+      summary: 修改任务
+      parameters:
+      - name: Token
+        in: query
+        required: true
+        description: 认证凭证Token
+        schema:
+          type: string
+      responses:
+        '200':
+          description: 成功响应
+          content:
+            application/json:
+              schema:
+                type: object
+              example: "{\n    \"name\": \"testtt\",\n    \"assignedTo\": [ \"admin\"\
+                \ ],\n    \"type\": \"devel\",\n    \"estStarted\": \"2021-12-01\"\
+                ,\n    \"deadline\": \"2021-12-31\"\n}"
+  /testcases/:id:
+    delete:
+      summary: 删除用例
+      parameters:
+      - name: Token
+        in: query
+        required: true
+        description: 认证凭证Token
+        schema:
+          type: string
+      responses:
+        '200':
+          description: 成功响应
+          content:
+            application/json:
+              schema:
+                type: object
+              example: "{\n    \"message\": \"success\"\n}"
+  /testtasks:
+    get:
+      summary: 获取测试单列表
+      parameters:
+      - name: Token
+        in: query
+        required: true
+        description: 认证凭证Token
+        schema:
+          type: string
+      responses:
+        '200':
+          description: 成功响应
+          content:
+            application/json:
+              schema:
+                type: object
+              example: "{\n    \"page\": 1,\n    \"total\": 1,\n    \"limit\": 20,\n\
+                \    \"testtasks\": [\n        {\n            \"id\": 1,\n       \
+                \     \"project\": 0,\n            \"product\": 1,\n            \"\
+                name\": \"企业网站第一期测试任务\",\n            \"execution\": 1,\n        \
+                \    \"build\": \"1\",\n            \"type\": \"\",\n            \"\
+                owner\": \"testManager\",\n            \"pri\": 0,\n            \"\
+                begin\": \"2020-06-05\",\n            \"end\": \"2021-06-21\",\n \
+                \           \"realFinishedDate\": null,\n            \"mailto\": \"\
+                \",\n            \"desc\": \"\",\n            \"report\": \"\",\n\
+                \            \"status\": \"wait\",\n            \"testreport\": 0,\n\
+                \            \"auto\": \"no\",\n            \"subStatus\": \"\",\n\
+                \            \"deleted\": \"0\",\n            \"productName\": \"\
+                公司企业网站建设1\",\n            \"executionName\": \"企业网站第一期\",\n      \
+                \      \"buildName\": \"第一期版本\",\n            \"branch\": 0\n    \
+                \    }\n    ]\n}"
+  /testtasks/:id:
+    get:
+      summary: 获取测试单详情
+      parameters:
+      - name: Token
+        in: query
+        required: true
+        description: 认证凭证Token
+        schema:
+          type: string
+      responses:
+        '200':
+          description: 成功响应
+          content:
+            application/json:
+              schema:
+                type: object
+  /tickets:
+    post:
+      summary: 创建工单
+      parameters:
+      - name: Token
+        in: query
+        required: true
+        description: 认证凭证Token
+        schema:
+          type: string
+      responses:
+        '200':
+          description: 成功响应
+          content:
+            application/json:
+              schema:
+                type: object
+              example: "{\n    \"product\": 2,\n    \"module\":2,\n    \"title\":\"\
+                create test ticket\"\n}"
+  /tickets/:id:
+    delete:
+      summary: 删除工单
+      parameters:
+      - name: Token
+        in: query
+        required: true
+        description: 认证凭证Token
+        schema:
+          type: string
+      responses:
+        '200':
+          description: 成功响应
+          content:
+            application/json:
+              schema:
+                type: object
+              example: "{\n    \"message\": \"success\"\n}"
+  /tokens:
+    post:
+      summary: 获取Token
+      parameters:
+      - name: account
+        in: query
+        required: false
+        description: 登录名
+        schema:
+          type: string
+      - name: password
+        in: query
+        required: false
+        description: 密码
+        schema:
+          type: string
+      responses:
+        '200':
+          description: 成功响应
+          content:
+            application/json:
+              schema:
+                type: object
+              example: '{"account": "admin", "password": "123456"}'
+  /user:
+    get:
+      summary: 获取我的个人信息
+      parameters:
+      - name: Token
+        in: query
+        required: true
+        description: 认证凭证Token
+        schema:
+          type: string
+      responses:
+        '200':
+          description: 成功响应
+          content:
+            application/json:
+              schema:
+                type: object
+              example: "{\n    \"profile\": {\n        \"id\": 1,\n        \"company\"\
+                : 0,\n        \"type\": \"inside\",\n        \"dept\": 0,\n      \
+                \  \"account\": \"admin\",\n        \"role\": {\n            \"code\"\
+                : \"\",\n            \"name\": \"\"\n        },\n        \"realname\"\
+                : \"admin\",\n        \"nickname\": \"\",\n        \"commiter\": \"\
+                \",\n        \"avatar\": \"\",\n        \"birthday\": null,\n    \
+                \    \"gender\": \"f\",\n        \"email\": \"\",\n        \"skype\"\
+                : \"\",\n        \"qq\": \"\",\n        \"mobile\": \"\",\n      \
+                \  \"phone\": \"\",\n        \"weixin\": \"\",\n        \"dingding\"\
+                : \"\",\n        \"slack\": \"\",\n        \"whatsapp\": \"\",\n \
+                \       \"address\": \"\",\n        \"zipcode\": \"\",\n        \"\
+                nature\": \"\",\n        \"analysis\": \"\",\n        \"strategy\"\
+                : \"\",\n        \"join\": null,\n        \"visits\": 10,\n      \
+                \  \"ip\": \"127.0.0.1\",\n        \"last\": \"2021-11-28T16:31:40Z\"\
+                ,\n        \"fails\": 0,\n        \"locked\": null,\n        \"ranzhi\"\
+                : \"\",\n        \"score\": 0,\n        \"scoreLevel\": 0,\n     \
+                \   \"deleted\": \"0\",\n        \"admin\": true\n    }\n}"
+  /users:
+    get:
+      summary: 获取用户列表
+      parameters:
+      - name: Token
+        in: query
+        required: true
+        description: 认证凭证Token
+        schema:
+          type: string
+      responses:
+        '200':
+          description: 成功响应
+          content:
+            application/json:
+              schema:
+                type: object
+              example: "{\n    \"page\": 1,\n    \"total\": 3,\n    \"limit\": 20,\n\
+                \    \"users\": [\n        {\n            \"id\": 3,\n           \
+                \ \"dept\": 6,\n            \"account\": \"projectManager\",\n   \
+                \         \"realname\": \"项目经理\",\n            \"role\": \"pm\",\n\
+                \            \"email\": \"\"\n        },\n        {\n            \"\
+                id\": 2,\n            \"dept\": 5,\n            \"account\": \"productManager\"\
+                ,\n            \"realname\": \"产品经理\",\n            \"role\": \"po\"\
+                ,\n            \"email\": \"\"\n        },\n        {\n          \
+                \  \"id\": 1,\n            \"dept\": 0,\n            \"account\":\
+                \ \"admin\",\n            \"realname\": \"admin\",\n            \"\
+                role\": \"\",\n            \"email\": \"\"\n        }\n    ]\n}"
+  /users/:id:
+    put:
+      summary: 修改用户信息
+      parameters:
+      - name: Token
+        in: query
+        required: true
+        description: 认证凭证
+        schema:
+          type: string
+      responses:
+        '200':
+          description: 成功响应
+          content:
+            application/json:
+              schema:
+                type: object
+              example: "{\n    \"realname\": \"管理员\"\n}"
