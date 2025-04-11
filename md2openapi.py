@@ -93,22 +93,6 @@ def parse_markdown_file(filepath):
     # 不再构建请求体模型，所有请求头字段都作为header参数
     request_body = None
 
-    # # 响应示例（已忽略）
-    # resp_example_match = re.search(r'####\s*响应示例\s*\n```json\n([\s\S]+?)\n```', content)
-    # example_json = None
-    # if resp_example_match:
-    #     example_text = resp_example_match.group(1).strip()
-    #     # 尝试修复不完整的JSON
-    #     if not example_text.startswith('{') and not example_text.startswith('['):
-    #         example_text = '{' + example_text
-    #     if not example_text.endswith('}') and not example_text.endswith(']'):
-    #         example_text = example_text + '}'
-    #     try:
-    #         example_json = json.loads(example_text)
-    #     except json.JSONDecodeError:
-    #         logger.warning(f"无法解析响应示例JSON: {filepath}")
-    #         example_json = example_text
-
     # 构建响应对象
     responses = {
         '200': {
@@ -177,7 +161,7 @@ def parse_markdown_file(filepath):
     }
 
 
-def determine_schema_type(param_type, param_desc):
+def determine_schema_type(param_type, param_desc, param_name=''):
     """
     根据参数类型和描述确定OpenAPI schema类型
     """
@@ -200,8 +184,12 @@ def determine_schema_type(param_type, param_desc):
         'date': 'string',
         'datetime': 'string',
         'time': 'string',
-        'user': 'string',  # 特殊类型，处理为string
+        'user': 'object',  # 特殊类型，处理为dict/字典
     }
+
+    # 不再对 'desc' 字段进行特殊处理
+    # if param_name.lower() == 'desc':
+    #     return {'type': 'string'}
 
     # 设置基本类型
     if param_type in type_mapping:
@@ -293,7 +281,7 @@ def parse_response_schema(content):
     # 处理根表格
     if 'root' in parsed_tables:
         for prop in parsed_tables['root']:
-            prop_schema = determine_schema_type(prop['type'], prop['description'])
+            prop_schema = determine_schema_type(prop['type'], prop['description'], prop['name'])
             root_schema['properties'][prop['name']] = prop_schema
             if prop['required']:
                 root_schema['required'].append(prop['name'])
@@ -319,7 +307,7 @@ def parse_response_schema(content):
         }
 
         for prop in properties:
-            prop_schema = determine_schema_type(prop['type'], prop['description'])
+            prop_schema = determine_schema_type(prop['type'], prop['description'], prop['name'])
             child_schema['properties'][prop['name']] = prop_schema
             if prop['required']:
                 child_schema['required'].append(prop['name'])
@@ -376,40 +364,19 @@ def parse_info_md(info_path):
 
 def generate_schema_name(path, method, is_response=True):
     """
-    生成schema名称，格式如 ProductsListResponse 或 CreateUserRequest
+    生成schema名称，使用 operationId + Response 的格式
+    例如：
+    - GET /products -> getProductsResponse 或 listProductsResponse
+    - GET /products/{id} -> getProductsIdResponse
     """
-    # 清理路径，移除参数占位符
-    clean_path = re.sub(r'[:{][^/{}]+[}]?', '', path)
+    # 生成 operationId
+    operation_id = generate_operation_id(path, method)
 
-    # 分割路径并转换为驼峰命名
-    parts = [p for p in clean_path.strip('/').split('/') if p]
-    camel_parts = []
-    for part in parts:
-        if part:
-            camel_parts.append(part[0].upper() + part[1:])
-
-    # 组合名称
+    # 根据是响应还是请求添加相应的后缀
     if is_response:
-        suffix = 'Response'
-        prefix = {
-            'get': '',
-            'post': 'Create',
-            'put': 'Update',
-            'patch': 'Patch',
-            'delete': 'Delete'
-        }.get(method.lower(), '')
+        return operation_id + 'Response'
     else:
-        suffix = 'Request'
-        prefix = {
-            'get': '',
-            'post': 'Create',
-            'put': 'Update',
-            'patch': 'Patch',
-            'delete': 'Delete'
-        }.get(method.lower(), '')
-
-    name = prefix + ''.join(camel_parts) + suffix
-    return name
+        return operation_id + 'Request'
 
 
 def extract_schemas_from_apis(api_list):
@@ -470,81 +437,30 @@ def extract_schemas_from_apis(api_list):
 def generate_operation_id(path, method):
     """
     生成唯一且语义清晰的 operationId，避免重复
+    新格式：{method}{Resource}Id{SubResource}
+    例如：/executions/{id}/builds -> getExecutionsIdBuilds
+    例如：/bugs/{id} -> deleteBugsId
     """
-    # 判断是否有路径参数
-    has_path_param = '{' in path and '}' in path
+    method_lower = method.lower()
 
     # 分割路径
     parts = [p for p in path.strip('/').split('/') if p]
 
-    # 主资源
-    resource = parts[0] if len(parts) > 0 else ''
-    resource_camel = resource[0].upper() + resource[1:] if resource else ''
+    # 处理路径部分
+    processed_parts = []
+    for part in parts:
+        if part.startswith('{') and part.endswith('}'):
+            # 将路径参数替换为 'Id'
+            processed_parts.append('Id')
+        else:
+            # 将资源名称首字母大写
+            processed_parts.append(part[0].upper() + part[1:])
 
-    # 子资源（如果有）
-    subresource = ''
-    if len(parts) > 2:
-        subresource = parts[2]
-    elif len(parts) > 1 and not ('{' in parts[1] and '}' in parts[1]):
-        subresource = parts[1]
+    # 使用原始HTTP方法名称作为前缀
+    method_prefix = method_lower
 
-    subresource_camel = ''
-    if subresource:
-        subresource_camel = subresource[0].upper() + subresource[1:]
-
-    method_lower = method.lower()
-
-    # 生成 operationId
-    if method_lower == 'get':
-        if has_path_param:
-            if subresource_camel:
-                operation_id = f'get{resource_camel}{subresource_camel}ById'
-            else:
-                operation_id = f'get{resource_camel}ById'
-        else:
-            if subresource_camel:
-                operation_id = f'list{resource_camel}{subresource_camel}'
-            else:
-                operation_id = f'list{resource_camel}'
-    elif method_lower == 'post':
-        if has_path_param:
-            if subresource_camel:
-                operation_id = f'post{resource_camel}{subresource_camel}ById'
-            else:
-                operation_id = f'post{resource_camel}ById'
-        else:
-            if subresource_camel:
-                operation_id = f'create{resource_camel}{subresource_camel}'
-            else:
-                operation_id = f'create{resource_camel}'
-    elif method_lower == 'put':
-        if has_path_param:
-            if subresource_camel:
-                operation_id = f'update{resource_camel}{subresource_camel}ById'
-            else:
-                operation_id = f'update{resource_camel}ById'
-        else:
-            if subresource_camel:
-                operation_id = f'update{resource_camel}{subresource_camel}'
-            else:
-                operation_id = f'update{resource_camel}'
-    elif method_lower == 'delete':
-        if has_path_param:
-            if subresource_camel:
-                operation_id = f'delete{resource_camel}{subresource_camel}ById'
-            else:
-                operation_id = f'delete{resource_camel}ById'
-        else:
-            if subresource_camel:
-                operation_id = f'delete{resource_camel}{subresource_camel}'
-            else:
-                operation_id = f'delete{resource_camel}'
-    else:
-        # 其他HTTP方法，简单拼接
-        if subresource_camel:
-            operation_id = f'{method_lower}{resource_camel}{subresource_camel}'
-        else:
-            operation_id = f'{method_lower}{resource_camel}'
+    # 组合 operationId
+    operation_id = method_prefix + ''.join(processed_parts)
 
     return operation_id
 
