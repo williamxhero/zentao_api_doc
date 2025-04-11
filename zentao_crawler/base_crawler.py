@@ -69,6 +69,10 @@ def find_chrome_executable():
 class BaseWebCrawler(ABC):
     """
     爬虫基类，定义爬虫的通用接口
+
+    注意：未来的爬虫类应该继承自 WebCrawler_21_6 而不是 BaseWebCrawler。
+    WebCrawler_21_6 类已经实现了大部分通用功能，包括登录、保存HTML、解析API信息等。
+    新版本的爬虫只需要重写特定于版本的方法即可。
     """
 
     def __init__(self, login_url, api_doc_url, username, password, output_dir="api_doc"):
@@ -124,51 +128,6 @@ class BaseWebCrawler(ABC):
             logger.error(f"初始化Chrome驱动失败: {str(e)}")
             raise
 
-    def login(self):
-        """
-        登录禅道系统
-
-        注意：这是一个基本的登录方法，适用于大多数禅道版本。
-        如果特定版本的登录流程有变化，子类可以重写这个方法。
-
-        Returns:
-            bool: 登录是否成功
-        """
-        try:
-            logger.info("访问禅道登录页...")
-            self.driver.get(self.login_url)
-
-            # 等待用户名输入框出现
-            WebDriverWait(self.driver, 10).until(
-                EC.presence_of_element_located((By.NAME, "account"))
-            )
-
-            # 输入用户名
-            user_input = self.driver.find_element(By.NAME, "account")
-            user_input.clear()
-            user_input.send_keys(self.username)
-
-            # 输入密码
-            pwd_input = self.driver.find_element(By.NAME, "password")
-            pwd_input.clear()
-            pwd_input.send_keys(self.password)
-
-            # 点击登录按钮
-            submit_btn = self.driver.find_element(By.ID, "submit")
-            submit_btn.click()
-
-            # 等待跳转，判断是否登录成功
-            time.sleep(2)
-            current_url = self.driver.current_url
-            if "user-login" in current_url:
-                logger.error("登录失败，请检查用户名和密码")
-                return False
-            logger.info("登录成功")
-            return True
-        except Exception as e:
-            logger.error(f"登录禅道时发生异常: {str(e)}")
-            return False
-
     def close(self):
         """
         关闭浏览器
@@ -215,6 +174,10 @@ class BaseWebCrawler(ABC):
         """
         爬取API文档，生成符合规范的Markdown接口文档。
 
+        注意：未来的爬虫类应该继承自 WebCrawler_21_6 而不是 BaseWebCrawler。
+        WebCrawler_21_6 类已经实现了大部分通用功能，包括登录、保存HTML、解析API信息等。
+        新版本的爬虫只需要重写特定于版本的方法即可。
+
         生成的每个Markdown文件应遵循以下格式：
 
         ### METHOD /path
@@ -227,6 +190,28 @@ class BaseWebCrawler(ABC):
         | --- | --- | --- | --- |
         | param1 | string | 是 | 参数1描述 |
         | param2 | int | 否 | 参数2描述 |
+
+        #### 请求体
+
+        | 名称 | 类型 | 必填 | 描述 |
+        | --- | --- | --- | --- |
+        | name | string | 是 | 名称 |
+        | type | string | 是 | 类型 |
+        | assignedTo | array | 是 | 指派给用户列表 |
+        | estStarted | date | 是 | 预计开始日期 |
+        | deadline | date | 是 | 预计结束日期 |
+
+        #### 请求示例
+
+        ```json
+        {
+            "name": "测试任务",
+            "type": "devel",
+            "assignedTo": ["admin"],
+            "estStarted": "2021-12-01",
+            "deadline": "2021-12-31"
+        }
+        ```
 
         #### 响应参数
 
@@ -281,5 +266,9 @@ class BaseWebCrawler(ABC):
 
         其他版本的爬虫实现此方法时，必须生成符合上述规范的Markdown文档，
         以便后续自动转换为OpenAPI规范。
+
+        注意：请求示例和响应示例应从 pre 元素中提取，而不是表格。
+        请根据标题内容动态判断表格类型，而不是固定的表格顺序。
+        只保存 <div class="bg-white p-3 panel"> 里的内容。
         """
         pass

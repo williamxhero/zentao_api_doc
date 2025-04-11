@@ -1,5 +1,3 @@
-from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
@@ -16,8 +14,249 @@ from .base_crawler import BaseWebCrawler
 
 class WebCrawler_21_6(BaseWebCrawler):
     """
-    禅道21.6版本的爬虫实现
+    禅道21.6版本的爬虫实现，
+    未来版本的爬虫类应该继承自该类，而不是BaseWebCrawler
     """
+
+    def login(self):
+        """
+        登录21.6版本的禅道系统
+
+        Returns:
+            bool: 登录是否成功
+        """
+        try:
+            logger.info("访问禅道登录页...")
+            self.driver.get(self.login_url)
+
+            # 等待用户名输入框出现
+            WebDriverWait(self.driver, 10).until(
+                EC.presence_of_element_located((By.NAME, "account"))
+            )
+
+            # 输入用户名
+            user_input = self.driver.find_element(By.NAME, "account")
+            user_input.clear()
+            user_input.send_keys(self.username)
+
+            # 输入密码
+            pwd_input = self.driver.find_element(By.NAME, "password")
+            pwd_input.clear()
+            pwd_input.send_keys(self.password)
+
+            # 点击登录按钮
+            submit_btn = self.driver.find_element(By.ID, "submit")
+            submit_btn.click()
+
+            # 等待跳转，判断是否登录成功
+            time.sleep(2)
+            current_url = self.driver.current_url
+            if "user-login" in current_url:
+                logger.error("登录失败，请检查用户名和密码")
+                return False
+            logger.info("登录成功")
+            return True
+        except Exception as e:
+            logger.error(f"登录禅道时发生异常: {str(e)}")
+            return False
+
+    def save_api_html(self, html_filename):
+        """
+        保存API页面的HTML内容
+
+        Args:
+            html_filename: HTML文件保存路径
+
+        Returns:
+            bool: 保存是否成功
+        """
+        try:
+            # 创建html目录
+            html_dir = os.path.dirname(html_filename)
+            if not os.path.exists(html_dir):
+                os.makedirs(html_dir)
+
+            # 只保存<div class="bg-white p-3 panel">里的内容
+            panel_elem = self.driver.find_element(By.CSS_SELECTOR, "div.bg-white.p-3.panel")
+            if panel_elem:
+                panel_html = panel_elem.get_attribute('outerHTML')
+                with open(html_filename, "w", encoding="utf-8") as f:
+                    f.write(panel_html)
+                logger.info(f"已保存面板内容: {html_filename}")
+                return True
+            else:
+                logger.warning(f"未找到面板元素")
+                return False
+        except Exception as e:
+            logger.warning(f"保存HTML内容失败: {str(e)}")
+            return False
+
+    def parse_api_info(self):
+        """
+        解析API基本信息，包括方法、URL和描述
+
+        Returns:
+            dict: 包含API信息的字典
+        """
+        result = {
+            'method': '',
+            'url': '',
+            'description': ''
+        }
+
+        # 提取API方法
+        try:
+            method_elem = WebDriverWait(self.driver, 5).until(
+                EC.presence_of_element_located((By.XPATH, "/html/body/div[1]/div/div[2]/div[2]/div/div[1]/div[1]"))
+            )
+            result['method'] = method_elem.text.strip()
+            logger.info(f"检测到API方法: {result['method']}")
+        except Exception as e:
+            logger.warning(f"未能检测到API方法: {str(e)}")
+
+        # 提取API URL
+        try:
+            url_elem = WebDriverWait(self.driver, 5).until(
+                EC.presence_of_element_located((By.XPATH, "/html/body/div[1]/div/div[2]/div[2]/div/div[1]/div[2]"))
+            )
+            result['url'] = url_elem.text.strip()
+            logger.info(f"检测到API URL: {result['url']}")
+        except Exception as e:
+            logger.warning(f"未能检测到API URL: {str(e)}")
+
+        # 提取API描述
+        try:
+            desc_elem = WebDriverWait(self.driver, 5).until(
+                EC.presence_of_element_located((By.XPATH, "/html/body/div[1]/div/div[2]/div[2]/div/div[2]/h2"))
+            )
+            result['description'] = desc_elem.text.strip()
+            logger.info(f"检测到API描述: {result['description']}")
+        except Exception as e:
+            logger.warning(f"未能检测到API描述: {str(e)}")
+
+        return result
+
+    def parse_api_sections(self):
+        """
+        解析API页面的各个部分，包括表格和示例
+
+        本方法会根据标题内容动态判断表格类型，而不是固定的表格顺序。
+        对于请求体表格，会提取字段名称、类型、是否必填、描述等信息。
+        对于请求示例和响应示例，会从 pre 元素中提取，而不是表格。
+        如果主要方法失败，会尝试使用备用方法提取示例。
+
+        Returns:
+            dict: 包含各部分内容的字典，包括：
+                - req_md: 请求头表格的Markdown内容
+                - req_body_md: 请求体表格的Markdown内容
+                - resp_md: 响应参数表格的Markdown内容
+                - req_example: 请求示例的JSON字符串
+                - resp_example: 响应示例的JSON字符串
+        """
+        result = {
+            'req_md': '',
+            'req_body_md': '',
+            'resp_md': '',
+            'req_example': '',
+            'resp_example': ''
+        }
+
+        try:
+            # 使用显式等待，等待页面内容加载
+            WebDriverWait(self.driver, 5).until(
+                EC.presence_of_element_located((By.XPATH, "/html/body/div[1]/div/div[2]/div[2]/div/div[2]/div[2]"))
+            )
+
+            # 获取所有h3标题
+            h3_elems = self.driver.find_elements(By.XPATH, "/html/body/div[1]/div/div[2]/div[2]/div/div[2]/div[2]/h3")
+            # 获取所有表格
+            tables = self.driver.find_elements(By.XPATH, "/html/body/div[1]/div/div[2]/div[2]/div/div[2]/div[2]/table")
+
+            # 对每个h3标题，找到其后面的表格
+            for i, h3 in enumerate(h3_elems):
+                title_text = h3.text.strip()
+                logger.info(f"发现标题: {title_text}")
+
+                # 获取当前标题的位置
+                h3_location = h3.location
+
+                # 获取下一个标题的位置（如果有）
+                next_h3_location = None
+                if i < len(h3_elems) - 1:
+                    next_h3_location = h3_elems[i+1].location
+
+                # 如果是表格标题，尝试找到其后面的表格
+                if any(keyword in title_text for keyword in ["请求头", "请求体", "请求响应", "响应参数", "返回参数", "响应字段"]):
+                    # 找到该标题后面的第一个表格
+                    table_found = False
+                    for table in tables:
+                        # 如果表格在标题之后
+                        if table.location['y'] > h3_location['y']:
+                            # 如果这个标题后面还有其他标题，则表格应该在这两个标题之间
+                            if next_h3_location and table.location['y'] > next_h3_location['y']:
+                                continue
+
+                            # 根据标题内容判断表格类型
+                            if "请求头" in title_text:
+                                result['req_md'] = self.parse_table_recursive(table)
+                                logger.info("成功解析请求头表格")
+                            elif "请求体" in title_text:
+                                result['req_body_md'] = self.parse_table_recursive(table)
+                                logger.info("成功解析请求体表格")
+                            elif "请求响应" in title_text or "响应参数" in title_text or "返回参数" in title_text or "响应字段" in title_text:
+                                result['resp_md'] = self.parse_table_recursive(table)
+                                logger.info("成功解析响应参数表格")
+
+                            table_found = True
+                            break
+
+                    if not table_found:
+                        logger.warning(f"标题 '{title_text}' 后面没有找到表格")
+
+                # 如果是示例标题，尝试找到其后面的pre元素
+                elif any(keyword in title_text for keyword in ["请求示例", "响应示例", "返回示例"]):
+                    # 使用XPath直接定位当前标题后面的pre元素
+                    xpath = f"//h3[contains(text(), '{title_text}')]/following-sibling::pre[1]"
+                    try:
+                        pre_elem = self.driver.find_element(By.XPATH, xpath)
+
+                        # 确保pre元素在当前标题和下一个标题之间
+                        if next_h3_location is None or pre_elem.location['y'] < next_h3_location['y']:
+                            pre_text = pre_elem.text.strip()
+
+                            if "请求示例" in title_text:
+                                result['req_example'] = pre_text
+                                logger.info(f"成功提取请求示例: {pre_text[:50]}...")
+                            elif "响应示例" in title_text or "返回示例" in title_text:
+                                result['resp_example'] = pre_text
+                                logger.info(f"成功提取响应示例: {pre_text[:50]}...")
+                    except Exception as e:
+                        logger.warning(f"未能找到标题 '{title_text}' 后面的pre元素: {str(e)}")
+
+                        # 尝试使用更通用的方法
+                        try:
+                            # 获取所有pre元素
+                            pre_elems = self.driver.find_elements(By.XPATH, "/html/body/div[1]/div/div[2]/div[2]/div/div[2]/div[2]/pre")
+
+                            # 找到当前标题后面的第一个pre元素
+                            for pre in pre_elems:
+                                if pre.location['y'] > h3_location['y']:
+                                    if next_h3_location is None or pre.location['y'] < next_h3_location['y']:
+                                        pre_text = pre.text.strip()
+
+                                        if "请求示例" in title_text:
+                                            result['req_example'] = pre_text
+                                            logger.info(f"成功提取请求示例(备用方法): {pre_text[:50]}...")
+                                        elif "响应示例" in title_text or "返回示例" in title_text:
+                                            result['resp_example'] = pre_text
+                                            logger.info(f"成功提取响应示例(备用方法): {pre_text[:50]}...")
+                                        break
+                        except Exception as e2:
+                            logger.warning(f"备用方法也未能提取示例: {str(e2)}")
+        except Exception as e:
+            logger.error(f"解析API部分时发生错误: {str(e)}")
+
+        return result
 
     def detect_version(self):
         """
@@ -133,6 +372,22 @@ class WebCrawler_21_6(BaseWebCrawler):
     def crawl(self):
         """
         爬取API文档
+
+        本方法实现了完整的爬取流程，包括：
+        1. 登录禅道系统
+        2. 访问API文档页面
+        3. 检测禅道版本
+        4. 展开所有API菜单
+        5. 逐个点击API链接并提取信息
+        6. 保存HTML内容到api_doc/html目录，只保存<div class="bg-white p-3 panel">里的内容
+        7. 解析API信息，包括方法、URL、描述等
+        8. 根据标题内容动态判断表格类型，而不是固定的表格顺序
+        9. 正确提取请求体表格，包含字段名称、类型、是否必填、描述等信息
+        10. 从 pre 元素中提取请求示例和响应示例，而不是表格
+        11. 处理复杂的请求示例，包括嵌套对象、数组等结构
+        12. 生成符合规范的Markdown文档
+
+        未来版本的爬虫类应该继承自本类，而不是 BaseWebCrawler。
         """
         try:
             # 确保已登录
@@ -204,74 +459,24 @@ class WebCrawler_21_6(BaseWebCrawler):
                         # 增加等待时间，确保页面完全加载
                         time.sleep(3)  # 增加等待时间
 
-                        # 使用显式等待，等待方法元素出现
-                        try:
-                            method_elem = WebDriverWait(self.driver, 5).until(
-                                EC.presence_of_element_located((By.XPATH, "/html/body/div[1]/div/div[2]/div[2]/div/div[1]/div[1]"))
-                            )
-                            method = method_elem.text.strip()
-                            logger.info(f"检测到API方法: {method}")
-                        except Exception as e:
-                            logger.warning(f"未能检测到API方法: {str(e)}")
-                            method = ""
+                        # 保存HTML内容
+                        html_filename = os.path.join(self.output_dir, "html", f"{idx+1:03d}_{href.split('/')[-1]}")
+                        self.save_api_html(html_filename)
 
-                        # 提取API URL
-                        try:
-                            url_elem = WebDriverWait(self.driver, 5).until(
-                                EC.presence_of_element_located((By.XPATH, "/html/body/div[1]/div/div[2]/div[2]/div/div[1]/div[2]"))
-                            )
-                            api_url = url_elem.text.strip()
-                            logger.info(f"检测到API URL: {api_url}")
-                        except Exception as e:
-                            logger.warning(f"未能检测到API URL: {str(e)}")
-                            api_url = ""
+                        # 解析API信息
+                        api_info = self.parse_api_info()
+                        method = api_info['method']
+                        api_url = api_info['url']
+                        description = api_info['description']
 
-                        # 提取描述
-                        try:
-                            desc_elem = WebDriverWait(self.driver, 5).until(
-                                EC.presence_of_element_located((By.XPATH, "/html/body/div[1]/div/div[2]/div[2]/div/div[2]/h2"))
-                            )
-                            description = desc_elem.text.strip()
-                            logger.info(f"检测到API描述: {description}")
-                        except Exception as e:
-                            logger.warning(f"未能检测到API描述: {str(e)}")
-                            description = ""
+                        # 解析表格和示例
+                        sections = self.parse_api_sections()
+                        req_md = sections.get('req_md', '')
+                        req_body_md = sections.get('req_body_md', '')
+                        resp_md = sections.get('resp_md', '')
+                        req_example = sections.get('req_example', '')
+                        resp_example = sections.get('resp_example', '')
 
-                        # 请求头表格
-                        req_md = ""
-                        try:
-                            # 使用显式等待，等待请求表格出现
-                            req_table_elem = WebDriverWait(self.driver, 5).until(
-                                EC.presence_of_element_located((By.XPATH, "/html/body/div[1]/div/div[2]/div[2]/div/div[2]/div[2]/table[1]"))
-                            )
-                            req_md = self.parse_table_recursive(req_table_elem)
-                            logger.info("成功解析请求头表格")
-                        except Exception as e:
-                            logger.warning(f"未能解析请求头表格: {str(e)}")
-
-                        # 响应参数表格
-                        resp_md = ""
-                        try:
-                            # 使用显式等待，等待响应表格出现
-                            resp_table_elem = WebDriverWait(self.driver, 5).until(
-                                EC.presence_of_element_located((By.XPATH, "/html/body/div[1]/div/div[2]/div[2]/div/div[2]/div[2]/table[2]"))
-                            )
-                            resp_md = self.parse_table_recursive(resp_table_elem)
-                            logger.info("成功解析响应参数表格")
-                        except Exception as e:
-                            logger.warning(f"未能解析响应参数表格: {str(e)}")
-
-                        # 响应示例
-                        resp_example = ""
-                        try:
-                            # 使用显式等待，等待响应示例出现
-                            resp_pre = WebDriverWait(self.driver, 5).until(
-                                EC.presence_of_element_located((By.XPATH, "/html/body/div[1]/div/div[2]/div[2]/div/div[2]/div[2]/pre"))
-                            )
-                            resp_example = resp_pre.text.strip()
-                            logger.info("成功提取响应示例")
-                        except Exception as e:
-                            logger.warning(f"未能提取响应示例: {str(e)}")
 
                         # 验证是否获取到有效内容
                         if not method or not api_url:
@@ -307,6 +512,14 @@ class WebCrawler_21_6(BaseWebCrawler):
                         if req_md:
                             md += "#### 请求头\n\n"
                             md += req_md + "\n\n"
+
+                        if req_body_md:
+                            md += "#### 请求体\n\n"
+                            md += req_body_md + "\n\n"
+
+                        if req_example:
+                            md += "#### 请求示例\n\n"
+                            md += f"```json\n{req_example}\n```\n\n"
 
                         if resp_md:
                             md += "#### 响应参数\n\n"

@@ -4,7 +4,6 @@ import yaml
 import glob
 import json
 import logging
-from collections import defaultdict
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
@@ -51,7 +50,7 @@ def parse_markdown_file(filepath):
             }
         })
 
-    # 请求参数表格
+    # 请求头参数表格
     req_table_match = re.search(r'####\s*请求头\s*\n([\s\S]+?)\n\n', content)
     if req_table_match:
         table = req_table_match.group(1)
@@ -72,9 +71,6 @@ def parse_markdown_file(filepath):
                 # 默认情况下，请求头中的参数都视为header参数
                 param_in = 'header'
 
-                # 确定参数位置
-                # 默认全部请求头字段都作为header参数
-
                 # 确定参数类型和格式
                 schema = determine_schema_type(param_type, param_desc)
 
@@ -87,11 +83,213 @@ def parse_markdown_file(filepath):
                         'schema': schema
                     })
 
+    # 请求体参数表格
+    request_body = None
+    req_body_match = re.search(r'####\s*请求体\s*\n([\s\S]+?)\n\n', content)
+    if req_body_match:
+        # 解析请求体表格，构建请求体模型
+        req_body_schema = parse_request_body_schema(content)
+        if req_body_schema:
+            request_body = {
+                'required': True,
+                'content': {
+                    'application/json': {
+                        'schema': req_body_schema
+                    }
+                }
+            }
+
+            # 尝试提取请求示例
+            req_example_match = re.search(r'####\s*请求示例\s*\n```(?:json)?\s*([\s\S]+?)\s*```', content)
+            if req_example_match:
+                try:
+                    example_json = json.loads(req_example_match.group(1))
+                    request_body['content']['application/json']['example'] = example_json
+                except Exception as e:
+                    logger.warning(f"解析请求示例JSON失败: {str(e)}")
+
+    # 如果没有请求体表格，但有请求参数表格，尝试使用请求参数表格
+    if not request_body:
+        # 尝试匹配不同的请求参数标题
+        req_params_match = None
+        for title in ['请求参数', '请求字段']:
+            match = re.search(f'####\\s*{title}\\s*\\n([\\s\\S]+?)\\n\\n', content)
+            if match:
+                req_params_match = match
+                break
+
+        # 单独处理请求头参数，将其放入parameters而非requestBody
+        header_params_match = re.search(f'####\\s*请求头参数\\s*\\n([\\s\\S]+?)\\n\\n', content)
+        if header_params_match:
+            try:
+                table = header_params_match.group(1)
+                lines = [line.strip() for line in table.splitlines() if '|' in line]
+                if len(lines) >= 2:
+                    headers = [h.strip() for h in lines[0].split('|')[1:-1]]
+                    for line in lines[2:]:  # 跳过分隔行
+                        cols = [c.strip() for c in line.split('|')[1:-1]]
+                        if len(cols) != len(headers):
+                            continue
+                        param = dict(zip(headers, cols))
+                        param_name = param.get('名称', '')
+                        param_type = param.get('类型', '').lower()
+                        param_required = param.get('必填', '') == '是'
+                        param_desc = param.get('描述', '')
+
+                        # 添加到parameters中，使用in: header
+                        req_params.append({
+                            'name': param_name,
+                            'in': 'header',
+                            'required': param_required,
+                            'description': param_desc,
+                            'schema': determine_schema_type(param_type, param_desc, param_name)
+                        })
+            except Exception as e:
+                logger.warning(f"解析请求头参数失败: {str(e)}")
+
+        if req_params_match and method.lower() in ['post', 'put', 'patch']:
+            # 解析请求参数表格，构建请求体模型
+            try:
+                table = req_params_match.group(1)
+                lines = [line.strip() for line in table.splitlines() if '|' in line]
+                if len(lines) >= 2:
+                    # 构建请求体schema
+                    schema = {
+                        'type': 'object',
+                        'properties': {},
+                        'required': []
+                    }
+
+                    headers = [h.strip() for h in lines[0].split('|')[1:-1]]
+                    for line in lines[2:]:  # 跳过分隔行
+                        cols = [c.strip() for c in line.split('|')[1:-1]]
+                        if len(cols) != len(headers):
+                            continue
+                        param = dict(zip(headers, cols))
+                        param_name = param.get('名称', '')
+                        param_type = param.get('类型', '').lower()
+                        param_required = param.get('必填', '') == '是'
+                        param_desc = param.get('描述', '')
+
+                        # 检查是否是header参数
+                        if param_name.lower() in ['token', 'authorization', 'cookie', 'content-type']:
+                            # 添加到parameters中，而不是requestBody
+                            req_params.append({
+                                'name': param_name,
+                                'in': 'header',
+                                'required': param_required,
+                                'description': param_desc,
+                                'schema': determine_schema_type(param_type, param_desc, param_name)
+                            })
+                        else:
+                            # 添加到schema
+                            schema['properties'][param_name] = determine_schema_type(param_type, param_desc, param_name)
+                            if param_required:
+                                schema['required'].append(param_name)
+
+                    # 如果没有必填字段，删除required数组
+                    if not schema['required']:
+                        del schema['required']
+
+                    request_body = {
+                        'required': True,
+                        'content': {
+                            'application/json': {
+                                'schema': schema
+                            }
+                        }
+                    }
+
+                    logger.info(f"使用请求参数表格构建了请求体schema: {os.path.basename(filepath)}")
+            except Exception as e:
+                logger.warning(f"使用请求参数表格构建请求体schema失败: {str(e)}")
+
+    # 如果没有请求体但有请求示例，使用请求示例构建请求体
+    if not request_body:
+        # 先尝试匹配标准的请求示例部分
+        req_example_match = re.search(r'####\s*请求示例\s*\n```(?:json)?\s*([\s\S]+?)\s*```', content)
+
+        # 如果没有标准的请求示例，尝试使用响应示例作为请求体
+        # 这是因为有些API文档中响应示例实际上是请求体的示例
+        if not req_example_match and method.lower() in ['post', 'put', 'patch']:
+            # 检查是否有响应示例
+            resp_example_match = re.search(r'####\s*响应示例\s*\n```(?:json)?\s*([\s\S]+?)\s*```', content)
+            if resp_example_match:
+                # 检查响应示例是否看起来像请求体
+                # 如果响应示例中包含常见的请求字段，则可能是请求体
+                example_json_str = resp_example_match.group(1)
+                try:
+                    example_json = json.loads(example_json_str)
+                    # 检查是否包含常见的请求字段
+                    request_fields = ['name', 'title', 'type', 'status', 'assignedTo', 'date', 'desc', 'estStarted', 'deadline']
+                    if any(field in example_json for field in request_fields):
+                        logger.info(f"使用响应示例作为请求体示例: {os.path.basename(filepath)}")
+                        req_example_match = resp_example_match
+                except Exception as e:
+                    logger.warning(f"解析响应示例失败: {str(e)}")
+
+        if req_example_match:
+            try:
+                example_json_str = req_example_match.group(1)
+                example_json = json.loads(example_json_str)
+
+                # 根据示例构建简单的schema
+                schema = {
+                    'type': 'object',
+                    'properties': {}
+                }
+
+                # 为每个字段根据值类型生成schema
+                for key, value in example_json.items():
+                    if isinstance(value, str):
+                        schema['properties'][key] = {'type': 'string'}
+                    elif isinstance(value, int):
+                        schema['properties'][key] = {'type': 'integer'}
+                    elif isinstance(value, float):
+                        schema['properties'][key] = {'type': 'number'}
+                    elif isinstance(value, bool):
+                        schema['properties'][key] = {'type': 'boolean'}
+                    elif isinstance(value, list):
+                        if value and isinstance(value[0], str):
+                            schema['properties'][key] = {
+                                'type': 'array',
+                                'items': {'type': 'string'}
+                            }
+                        elif value and isinstance(value[0], int):
+                            schema['properties'][key] = {
+                                'type': 'array',
+                                'items': {'type': 'integer'}
+                            }
+                        elif value and isinstance(value[0], dict):
+                            schema['properties'][key] = {
+                                'type': 'array',
+                                'items': {'type': 'object'}
+                            }
+                        else:
+                            schema['properties'][key] = {
+                                'type': 'array',
+                                'items': {'type': 'string'}
+                            }
+                    elif isinstance(value, dict):
+                        schema['properties'][key] = {'type': 'object'}
+                    else:
+                        schema['properties'][key] = {'type': 'string'}
+
+                request_body = {
+                    'required': True,
+                    'content': {
+                        'application/json': {
+                            'schema': schema,
+                            'example': example_json
+                        }
+                    }
+                }
+                logger.info(f"使用请求示例构建了请求体schema")
+            except Exception as e:
+                logger.warning(f"使用请求示例构建请求体schema失败: {str(e)}")
+
     # 解析响应参数表格，构建响应模型
     response_schema = parse_response_schema(content)
-
-    # 不再构建请求体模型，所有请求头字段都作为header参数
-    request_body = None
 
     # 构建响应对象
     responses = {
@@ -147,7 +345,7 @@ def parse_markdown_file(filepath):
             'in': 'header',
             'required': False,
             'description': '认证Token',
-            'schema': {'type': 'string'}
+            'schema': {'type': 'string', 'description': '认证Token'}
         })
 
     return {
@@ -164,6 +362,14 @@ def parse_markdown_file(filepath):
 def determine_schema_type(param_type, param_desc, param_name=''):
     """
     根据参数类型和描述确定OpenAPI schema类型
+
+    Args:
+        param_type: 参数类型字符串
+        param_desc: 参数描述字符串
+        param_name: 参数名称，用于特殊处理某些字段
+
+    Returns:
+        dict: OpenAPI schema定义
     """
     param_type = param_type.lower()
     schema = {'type': 'string'}
@@ -187,9 +393,13 @@ def determine_schema_type(param_type, param_desc, param_name=''):
         'user': 'object',  # 特殊类型，处理为dict/字典
     }
 
-    # 不再对 'desc' 字段进行特殊处理
-    # if param_name.lower() == 'desc':
-    #     return {'type': 'string'}
+    # 添加描述信息
+    if param_desc:
+        schema['description'] = param_desc
+
+    # 如果是'desc'字段，强制使用string类型
+    if param_name and param_name.lower() == 'desc':
+        return {'type': 'string', 'description': param_desc if param_desc else '任务描述'}
 
     # 设置基本类型
     if param_type in type_mapping:
@@ -223,17 +433,131 @@ def determine_schema_type(param_type, param_desc, param_name=''):
     return schema
 
 
+def parse_request_body_schema(content):
+    """
+    解析请求体参数表格，构建请求体模型
+    """
+    req_body_match = re.search(r'####\s*请求体\s*\n([\s\S]+?)\n\n', content)
+    if not req_body_match:
+        return None
+
+    # 提取所有表格和它们的标题
+    tables = []
+    table_pattern = r'(\*\*([^*]+)\*\*\s*\n\s*\|[^\n]+\|\s*\n\s*\|[^\n]+\|\s*\n((?:\s*\|[^\n]+\|\s*\n)*))|(?:####\s*请求体\s*\n\s*\|[^\n]+\|\s*\n\s*\|[^\n]+\|\s*\n((?:\s*\|[^\n]+\|\s*\n)*))'
+    for m in re.finditer(table_pattern, content):
+        if m.group(4):  # 主表格
+            tables.append({
+                'title': 'root',
+                'content': m.group(4)
+            })
+        else:  # 子表格
+            tables.append({
+                'title': m.group(2),
+                'content': m.group(3)
+            })
+
+    if not tables:
+        return None
+
+    # 解析表格内容为属性
+    parsed_tables = {}
+    for table in tables:
+        properties = []
+        lines = [line.strip() for line in table['content'].splitlines() if '|' in line]
+        for line in lines:
+            cols = [c.strip() for c in line.split('|')[1:-1]]
+            if len(cols) < 3:
+                continue
+
+            # 假设列顺序为：名称、类型、必填、描述
+            if len(cols) >= 4:
+                prop = {
+                    'name': cols[0],
+                    'type': cols[1].lower(),
+                    'required': cols[2] == '是',
+                    'description': cols[3] if len(cols) > 3 else ''
+                }
+                properties.append(prop)
+
+        parsed_tables[table['title']] = properties
+
+    # 构建schema
+    root_schema = {
+        'type': 'object',
+        'properties': {},
+        'required': []
+    }
+
+    # 处理根表格
+    if 'root' in parsed_tables:
+        for prop in parsed_tables['root']:
+            prop_schema = determine_schema_type(prop['type'], prop['description'], prop['name'])
+            root_schema['properties'][prop['name']] = prop_schema
+            if prop['required']:
+                root_schema['required'].append(prop['name'])
+
+    # 处理子表格（嵌套对象和数组）
+    for title, properties in parsed_tables.items():
+        if title == 'root':
+            continue
+
+        # 解析标题，确定父属性和类型
+        title_parts = title.split(' ')
+        if len(title_parts) < 2:
+            continue
+
+        parent_name = title_parts[0]
+        obj_type = ' '.join(title_parts[1:]).lower()
+
+        # 创建子schema
+        child_schema = {
+            'type': 'object',
+            'properties': {},
+            'required': []
+        }
+
+        for prop in properties:
+            prop_schema = determine_schema_type(prop['type'], prop['description'], prop['name'])
+            child_schema['properties'][prop['name']] = prop_schema
+            if prop['required']:
+                child_schema['required'].append(prop['name'])
+
+        # 如果没有必填字段，删除required数组
+        if not child_schema['required']:
+            del child_schema['required']
+
+        # 将子schema添加到父属性
+        if parent_name in root_schema['properties']:
+            if '数组' in obj_type or 'array' in obj_type:
+                root_schema['properties'][parent_name]['items'] = child_schema
+            else:
+                root_schema['properties'][parent_name] = child_schema
+
+    # 如果没有必填字段，删除required数组
+    if not root_schema['required']:
+        del root_schema['required']
+
+    return root_schema
+
+
 def parse_response_schema(content):
     """
     解析响应参数表格，构建响应模型
     """
-    resp_table_match = re.search(r'####\s*响应参数\s*\n([\s\S]+?)\n\n', content)
+    # 尝试匹配不同的响应参数标题
+    resp_table_match = None
+    for title in ['响应参数', '请求响应', '响应字段', '返回参数']:
+        match = re.search(f'####\\s*{title}\\s*\\n([\\s\\S]+?)\\n\\n', content)
+        if match:
+            resp_table_match = match
+            break
+
     if not resp_table_match:
         return None
 
     # 提取所有表格和它们的标题
     tables = []
-    table_pattern = r'(\*\*([^*]+)\*\*\s*\n\s*\|[^\n]+\|\s*\n\s*\|[^\n]+\|\s*\n((?:\s*\|[^\n]+\|\s*\n)*))|(?:####\s*响应参数\s*\n\s*\|[^\n]+\|\s*\n\s*\|[^\n]+\|\s*\n((?:\s*\|[^\n]+\|\s*\n)*))'
+    table_pattern = r'(\*\*([^*]+)\*\*\s*\n\s*\|[^\n]+\|\s*\n\s*\|[^\n]+\|\s*\n((?:\s*\|[^\n]+\|\s*\n)*))|(?:####\s*(?:响应参数|请求响应|响应字段|返回参数)\s*\n\s*\|[^\n]+\|\s*\n\s*\|[^\n]+\|\s*\n((?:\s*\|[^\n]+\|\s*\n)*))'
     for m in re.finditer(table_pattern, content):
         if m.group(4):  # 主表格
             tables.append({
