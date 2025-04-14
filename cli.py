@@ -1,5 +1,8 @@
 from zentao_crawler.factory import WebCrawlerFactory
 import logging
+import os
+import shutil
+import glob
 
 # 配置日志
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -15,6 +18,35 @@ def main():
 
     # 创建爬虫实例
     crawler = WebCrawlerFactory.create_crawler("21.6", login_url, api_doc_url, username, password)
+
+    # 清理保存目录
+    output_dir = "api_doc"
+    html_dir = os.path.join(output_dir, "html")
+
+    # 清理Markdown文件
+    if os.path.exists(output_dir):
+        md_files = glob.glob(os.path.join(output_dir, "*.md"))
+        for file in md_files:
+            # 保留README.md、verification_report.md等非爬虫生成的文件
+            if os.path.basename(file) not in ["README.md", "verification_report.md"]:
+                os.remove(file)
+                logger.info(f"删除文件: {file}")
+    else:
+        os.makedirs(output_dir)
+        logger.info(f"创建目录: {output_dir}")
+
+    # 清理HTML目录
+    if os.path.exists(html_dir):
+        shutil.rmtree(html_dir)
+        logger.info(f"删除目录: {html_dir}")
+    os.makedirs(html_dir)
+    logger.info(f"创建目录: {html_dir}")
+
+    # 清理YAML文件
+    yaml_files = glob.glob(os.path.join(output_dir, "*.yaml"))
+    for file in yaml_files:
+        os.remove(file)
+        logger.info(f"删除文件: {file}")
 
     try:
         # 初始化浏览器

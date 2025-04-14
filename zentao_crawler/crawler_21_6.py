@@ -148,6 +148,7 @@ class WebCrawler_21_6(BaseWebCrawler):
         Returns:
             dict: 包含各部分内容的字典，包括：
                 - req_md: 请求头表格的Markdown内容
+                - req_params_md: 请求参数表格的Markdown内容
                 - req_body_md: 请求体表格的Markdown内容
                 - resp_md: 响应参数表格的Markdown内容
                 - req_example: 请求示例的JSON字符串
@@ -156,6 +157,7 @@ class WebCrawler_21_6(BaseWebCrawler):
         result = {
             'req_md': '',
             'req_body_md': '',
+            'req_params_md': '',
             'resp_md': '',
             'req_example': '',
             'resp_example': ''
@@ -186,7 +188,7 @@ class WebCrawler_21_6(BaseWebCrawler):
                     next_h3_location = h3_elems[i+1].location
 
                 # 如果是表格标题，尝试找到其后面的表格
-                if any(keyword in title_text for keyword in ["请求头", "请求体", "请求响应", "响应参数", "返回参数", "响应字段"]):
+                if any(keyword in title_text for keyword in ["请求头", "请求体", "请求参数", "请求响应", "响应参数", "返回参数", "响应字段"]):
                     # 找到该标题后面的第一个表格
                     table_found = False
                     for table in tables:
@@ -203,6 +205,9 @@ class WebCrawler_21_6(BaseWebCrawler):
                             elif "请求体" in title_text:
                                 result['req_body_md'] = self.parse_table_recursive(table)
                                 logger.info("成功解析请求体表格")
+                            elif "请求参数" in title_text:
+                                result['req_params_md'] = self.parse_table_recursive(table)
+                                logger.info("成功解析请求参数表格")
                             elif "请求响应" in title_text or "响应参数" in title_text or "返回参数" in title_text or "响应字段" in title_text:
                                 result['resp_md'] = self.parse_table_recursive(table)
                                 logger.info("成功解析响应参数表格")
@@ -306,6 +311,10 @@ class WebCrawler_21_6(BaseWebCrawler):
         """
         递归解析表格，生成嵌套的markdown表格
 
+        在处理描述字段时，会自动将描述中的管道符号(|)替换为斜杠(/)，
+        以避免破坏Markdown表格格式。这是因为Markdown表格使用管道符号作为列分隔符，
+        如果描述中包含管道符号，会导致表格解析错误。
+
         Args:
             table_elem: 表格元素
 
@@ -326,11 +335,15 @@ class WebCrawler_21_6(BaseWebCrawler):
                 if indent_match:
                     indent_level = len(indent_match.group(1))
                     name_clean = raw_name[indent_level:].strip()
+                # 获取描述并替换管道符号为斜杠，以避免破坏Markdown表格格式
+                description = cols[3].text.strip()
+                description = description.replace('|', '/')
+
                 param = {
                     "name": name_clean,
                     "type": cols[1].text.strip(),
                     "required": cols[2].text.strip(),
-                    "description": cols[3].text.strip(),
+                    "description": description,
                     "children": [],
                     "indent": indent_level
                 }
@@ -473,6 +486,7 @@ class WebCrawler_21_6(BaseWebCrawler):
                         sections = self.parse_api_sections()
                         req_md = sections.get('req_md', '')
                         req_body_md = sections.get('req_body_md', '')
+                        req_params_md = sections.get('req_params_md', '')
                         resp_md = sections.get('resp_md', '')
                         req_example = sections.get('req_example', '')
                         resp_example = sections.get('resp_example', '')
@@ -513,6 +527,10 @@ class WebCrawler_21_6(BaseWebCrawler):
                             md += "#### 请求头\n\n"
                             md += req_md + "\n\n"
 
+                        if req_params_md:
+                            md += "#### 请求参数\n\n"
+                            md += req_params_md + "\n\n"
+
                         if req_body_md:
                             md += "#### 请求体\n\n"
                             md += req_body_md + "\n\n"
@@ -522,7 +540,7 @@ class WebCrawler_21_6(BaseWebCrawler):
                             md += f"```json\n{req_example}\n```\n\n"
 
                         if resp_md:
-                            md += "#### 响应参数\n\n"
+                            md += "#### 请求响应\n\n"
                             md += resp_md + "\n\n"
 
                         if resp_example:

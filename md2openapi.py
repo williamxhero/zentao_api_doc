@@ -147,62 +147,86 @@ def parse_markdown_file(filepath):
             except Exception as e:
                 logger.warning(f"解析请求头参数失败: {str(e)}")
 
-        if req_params_match and method.lower() in ['post', 'put', 'patch']:
-            # 解析请求参数表格，构建请求体模型
+        # 处理请求参数表格
+        if req_params_match:
             try:
                 table = req_params_match.group(1)
                 lines = [line.strip() for line in table.splitlines() if '|' in line]
                 if len(lines) >= 2:
-                    # 构建请求体schema
-                    schema = {
-                        'type': 'object',
-                        'properties': {},
-                        'required': []
-                    }
-
                     headers = [h.strip() for h in lines[0].split('|')[1:-1]]
-                    for line in lines[2:]:  # 跳过分隔行
-                        cols = [c.strip() for c in line.split('|')[1:-1]]
-                        if len(cols) != len(headers):
-                            continue
-                        param = dict(zip(headers, cols))
-                        param_name = param.get('名称', '')
-                        param_type = param.get('类型', '').lower()
-                        param_required = param.get('必填', '') == '是'
-                        param_desc = param.get('描述', '')
 
-                        # 检查是否是header参数
-                        if param_name.lower() in ['token', 'authorization', 'cookie', 'content-type']:
-                            # 添加到parameters中，而不是requestBody
+                    # 对于GET请求，将请求参数作为query参数
+                    if method.lower() == 'get':
+                        for line in lines[2:]:  # 跳过分隔行
+                            cols = [c.strip() for c in line.split('|')[1:-1]]
+                            if len(cols) != len(headers):
+                                continue
+                            param = dict(zip(headers, cols))
+                            param_name = param.get('名称', '')
+                            param_type = param.get('类型', '').lower()
+                            param_required = param.get('必填', '') == '是'
+                            param_desc = param.get('描述', '')
+
+                            # 添加到parameters中，使用in: query
                             req_params.append({
                                 'name': param_name,
-                                'in': 'header',
+                                'in': 'query',
                                 'required': param_required,
                                 'description': param_desc,
                                 'schema': determine_schema_type(param_type, param_desc, param_name)
                             })
-                        else:
-                            # 添加到schema
-                            schema['properties'][param_name] = determine_schema_type(param_type, param_desc, param_name)
-                            if param_required:
-                                schema['required'].append(param_name)
+                        logger.info(f"为GET请求添加了query参数: {os.path.basename(filepath)}")
+                    # 对于POST/PUT/PATCH请求，将请求参数作为请求体
+                    elif method.lower() in ['post', 'put', 'patch']:
+                        # 构建请求体schema
+                        schema = {
+                            'type': 'object',
+                            'properties': {},
+                            'required': []
+                        }
 
-                    # 如果没有必填字段，删除required数组
-                    if not schema['required']:
-                        del schema['required']
+                        for line in lines[2:]:  # 跳过分隔行
+                            cols = [c.strip() for c in line.split('|')[1:-1]]
+                            if len(cols) != len(headers):
+                                continue
+                            param = dict(zip(headers, cols))
+                            param_name = param.get('名称', '')
+                            param_type = param.get('类型', '').lower()
+                            param_required = param.get('必填', '') == '是'
+                            param_desc = param.get('描述', '')
 
-                    request_body = {
-                        'required': True,
-                        'content': {
-                            'application/json': {
-                                'schema': schema
+                            # 检查是否是header参数
+                            if param_name.lower() in ['token', 'authorization', 'cookie', 'content-type']:
+                                # 添加到parameters中，而不是requestBody
+                                req_params.append({
+                                    'name': param_name,
+                                    'in': 'header',
+                                    'required': param_required,
+                                    'description': param_desc,
+                                    'schema': determine_schema_type(param_type, param_desc, param_name)
+                                })
+                            else:
+                                # 添加到schema
+                                schema['properties'][param_name] = determine_schema_type(param_type, param_desc, param_name)
+                                if param_required:
+                                    schema['required'].append(param_name)
+
+                        # 如果没有必填字段，删除required数组
+                        if not schema['required']:
+                            del schema['required']
+
+                        request_body = {
+                            'required': True,
+                            'content': {
+                                'application/json': {
+                                    'schema': schema
+                                }
                             }
                         }
-                    }
 
-                    logger.info(f"使用请求参数表格构建了请求体schema: {os.path.basename(filepath)}")
+                        logger.info(f"使用请求参数表格构建了请求体schema: {os.path.basename(filepath)}")
             except Exception as e:
-                logger.warning(f"使用请求参数表格构建请求体schema失败: {str(e)}")
+                logger.warning(f"处理请求参数表格失败: {str(e)}")
 
     # 如果没有请求体但有请求示例，使用请求示例构建请求体
     if not request_body:
